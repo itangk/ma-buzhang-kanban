@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>建筑施工项目总控工作台</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+/* ===== 全局变量与重置 ===== */
+:root {
+  --primary: #1a56a0;
+  --primary-light: #2d7dd2;
+  --primary-dark: #0f3d7a;
+  --primary-bg: #e8f0fa;
+  --success: #2e9e5b;
+  --success-bg: #e6f7ed;
+  --warning: #e8a317;
+  --warning-bg: #fef6e4;
+  --danger: #d9363e;
+  --danger-bg: #fdecee;
+  --info: #5c6c7c;
+  --bg-page: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-sidebar: #0c2a4e;
+  --bg-sidebar-hover: #163d6b;
+  --bg-sidebar-active: #1a56a0;
+  --text-primary: #1f2937;
+  --text-secondary: #5c6c7c;
+  --text-muted: #9ca3af;
+  --text-sidebar: #c8d6e5;
+  --border: #e2e8f0;
+  --border-light: #edf0f3;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --radius: 4px;
+  --radius-sm: 2px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: var(--text-primary); background: var(--bg-page); min-width: 1280px; }
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+input, select, textarea { font-family: inherit; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; }
+
+/* ===== 布局 ===== */
+.app-layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* 侧边栏 */
+.sidebar { width: 220px; background: var(--bg-sidebar); color: var(--text-sidebar); display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-logo { height: 56px; display: flex; align-items: center; padding: 0 18px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-logo svg { width: 28px; height: 28px; margin-right: 10px; flex-shrink: 0; }
+.sidebar-logo-text { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.3; }
+.sidebar-logo-text span { display: block; font-size: 11px; font-weight: 400; color: rgba(255,255,255,0.5); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0; }
+.sidebar-nav::-webkit-scrollbar { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+.nav-item { display: flex; align-items: center; padding: 10px 18px; cursor: pointer; transition: background 0.15s; font-size: 13px; color: var(--text-sidebar); border-left: 3px solid transparent; }
+.nav-item:hover { background: var(--bg-sidebar-hover); color: #fff; }
+.nav-item.active { background: var(--bg-sidebar-active); color: #fff; border-left-color: #4a9eff; font-weight: 500; }
+.nav-item svg { width: 16px; height: 16px; margin-right: 10px; flex-shrink: 0; opacity: 0.8; }
+.nav-item.active svg { opacity: 1; }
+.nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center; line-height: 1.5; }
+.sidebar-footer { padding: 12px 18px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: rgba(255,255,255,0.4); }
+
+/* 主内容区 */
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* 顶部栏 */
+.topbar { height: 56px; background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+.topbar-project { display: flex; align-items: center; gap: 16px; }
+.topbar-project-name { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.topbar-project-meta { display: flex; gap: 18px; font-size: 12px; color: var(--text-secondary); }
+.topbar-project-meta .item { display: flex; align-items: center; gap: 4px; }
+.topbar-project-meta .label { color: var(--text-muted); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.topbar-search { position: relative; }
+.topbar-search input { width: 220px; height: 32px; border: 1px solid var(--border); border-radius: 16px; padding: 0 12px 0 32px; outline: none; background: var(--bg-page); }
+.topbar-search input:focus { border-color: var(--primary-light); background: #fff; }
+.topbar-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted); }
+.topbar-icon-btn { position: relative; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
+.topbar-icon-btn:hover { background: var(--bg-page); color: var(--primary); }
+.topbar-icon-btn svg { width: 18px; height: 18px; }
+.topbar-icon-btn .dot { position: absolute; top: 7px; right: 8px; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; border: 2px solid #fff; }
+.topbar-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+.topbar-user:hover { background: var(--bg-page); }
+.topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+.topbar-user-info { font-size: 12px; }
+.topbar-user-info .name { font-weight: 500; color: var(--text-primary); }
+.topbar-user-info .role { color: var(--text-muted); font-size: 11px; }
+
+/* 内容区 */
+.content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.content::-webkit-scrollbar { width: 6px; height: 6px; }
+.content::-webkit-scrollbar-thumb { background: #c1c9d2; border-radius: 3px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+
+/* 页面标题 */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.page-title .subtitle { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.page-actions { display: flex; gap: 8px; }
+
+/* 按钮 */
+.btn { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 14px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; white-space: nowrap; }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-default { background: #fff; color: var(--text-primary); border-color: var(--border); }
+.btn-default:hover { border-color: var(--primary-light); color: var(--primary); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #b92b32; }
+.btn-sm { height: 26px; padding: 0 10px; font-size: 11px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-link { color: var(--primary); background: none; padding: 0 4px; height: auto; }
+.btn-link:hover { text-decoration: underline; }
+.btn-link.danger { color: var(--danger); }
+
+/* 卡片 */
+.card { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); margin-bottom: 14px; }
+.card-header { padding: 12px 16px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.card-title::before { content: ''; width: 3px; height: 14px; background: var(--primary); border-radius: 2px; }
+.card-body { padding: 14px 16px; }
+.card-body.no-padding { padding: 0; }
+
+/* 统计卡片 */
+.stat-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 14px; }
+.stat-card { background: #fff; border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); position: relative; overflow: hidden; }
+.stat-card .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+.stat-card .stat-value { font-size: 26px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.stat-card .stat-value .unit { font-size: 12px; font-weight: 400; color: var(--text-muted); margin-left: 3px; }
+.stat-card .stat-trend { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+.stat-card .stat-trend.up { color: var(--danger); }
+.stat-card .stat-trend.down { color: var(--success); }
+.stat-card .stat-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; opacity: 0.9; }
+.stat-card .stat-icon svg { width: 20px; height: 20px; }
+.stat-card.primary .stat-icon { background: var(--primary-bg); color: var(--primary); }
+.stat-card.success .stat-icon { background: var(--success-bg); color: var(--success); }
+.stat-card.warning .stat-icon { background: var(--warning-bg); color: var(--warning); }
+.stat-card.danger .stat-icon { background: var(--danger-bg); color: var(--danger); }
+.stat-card.info .stat-icon { background: #eef1f5; color: var(--info); }
+
+/* 网格布局 */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; }
+
+/* 表格 */
+.data-table { width: 100%; font-size: 12px; }
+.data-table th { background: var(--bg-page); color: var(--text-secondary); font-weight: 500; text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.data-table tr:hover td { background: #f8fafc; }
+.data-table .col-action { white-space: nowrap; }
+
+/* 状态标签 */
+.tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; line-height: 1.6; white-space: nowrap; }
+.tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; margin-right: 4px; }
+.tag-success { background: var(--success-bg); color: var(--success); }
+.tag-success::before { background: var(--success); }
+.tag-warning { background: var(--warning-bg); color: var(--warning); }
+.tag-warning::before { background: var(--warning); }
+.tag-danger { background: var(--danger-bg); color: var(--danger); }
+.tag-danger::before { background: var(--danger); }
+.tag-info { background: #eef1f5; color: var(--info); }
+.tag-info::before { background: var(--info); }
+.tag-primary { background: var(--primary-bg); color: var(--primary); }
+.tag-primary::before { background: var(--primary); }
+.tag-plain { background: #f3f4f6; color: var(--text-secondary); }
+.tag-plain::before { background: var(--text-muted); }
+
+/* 进度条 */
+.progress-bar { width: 100%; height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
+.progress-bar .fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.progress-bar .fill.primary { background: var(--primary); }
+.progress-bar .fill.success { background: var(--success); }
+.progress-bar .fill.warning { background: var(--warning); }
+.progress-bar .fill.danger { background: var(--danger); }
+.progress-with-text { display: flex; align-items: center; gap: 8px; }
+.progress-with-text .progress-bar { flex: 1; }
+.progress-with-text .progress-text { font-size: 11px; color: var(--text-secondary); min-width: 36px; text-align: right; }
+
+/* 筛选栏 */
+.filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-bar .filter-item { display: flex; align-items: center; gap: 5px; }
+.filter-bar label { font-size: 12px; color: var(--text-secondary); }
+.filter-bar select, .filter-bar input { height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 8px; outline: none; background: #fff; font-size: 12px; min-width: 100px; }
+.filter-bar select:focus, .filter-bar input:focus { border-color: var(--primary-light); }
+
+/* 图表容器 */
+.chart-container { width: 100%; min-height: 280px; }
+.chart-container.small { min-height: 200px; }
+.chart-container.large { min-height: 360px; }
+
+/* 风险等级标识 */
+.risk-level { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; }
+.risk-level .risk-dot { width: 8px; height: 8px; border-radius: 50%; }
+.risk-low .risk-dot { background: var(--success); }
+.risk-medium .risk-dot { background: var(--warning); }
+.risk-high .risk-dot { background: var(--danger); }
+.risk-low { color: var(--success); }
+.risk-medium { color: var(--warning); }
+.risk-high { color: var(--danger); }
+
+/* 时间线 */
+.timeline { position: relative; padding-left: 20px; }
+.timeline::before { content: ''; position: absolute; left: 5px; top: 4px; bottom: 4px; width: 2px; background: var(--border); }
+.timeline-item { position: relative; padding-bottom: 14px; }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-item::before { content: ''; position: absolute; left: -19px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 2px solid var(--primary); }
+.timeline-item.danger::before { border-color: var(--danger); }
+.timeline-item.warning::before { border-color: var(--warning); }
+.timeline-item.success::before { border-color: var(--success); }
+.timeline-time { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+.timeline-content { font-size: 12px; color: var(--text-primary); }
+.timeline-content .title { font-weight: 500; margin-bottom: 2px; }
+.timeline-content .desc { color: var(--text-secondary); font-size: 11px; }
+
+/* 弹窗 */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: none; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 6px; width: 560px; max-width: 90vw; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+.modal.large { width: 720px; }
+.modal-header { padding: 14px 20px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.modal-close { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); }
+.modal-close:hover { background: var(--bg-page); color: var(--text-primary); }
+.modal-close svg { width: 16px; height: 16px; }
+.modal-body { padding: 18px 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* 表单 */
+.form-group { margin-bottom: 14px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; font-weight: 500; }
+.form-label .required { color: var(--danger); margin-right: 2px; }
+.form-control { width: 100%; height: 32px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 10px; outline: none; font-size: 12px; background: #fff; }
+.form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 2px rgba(45,125,210,0.1); }
+textarea.form-control { height: auto; padding: 8px 10px; resize: vertical; min-height: 70px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-readonly { background: var(--bg-page); color: var(--text-secondary); }
+
+/* 详情列表 */
+.detail-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+.detail-item { display: flex; font-size: 12px; }
+.detail-item .detail-label { color: var(--text-secondary); min-width: 80px; flex-shrink: 0; }
+.detail-item .detail-value { color: var(--text-primary); font-weight: 500; }
+
+/* 待办列表 */
+.todo-list { list-style: none; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+.todo-item:last-child { border-bottom: none; }
+.todo-check { width: 16px; height: 16px; border: 1.5px solid var(--border); border-radius: 3px; margin-top: 1px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.todo-check.checked { background: var(--primary); border-color: var(--primary); }
+.todo-check.checked svg { width: 10px; height: 10px; color: #fff; }
+.todo-content { flex: 1; min-width: 0; }
+.todo-title { font-size: 12px; color: var(--text-primary); margin-bottom: 3px; }
+.todo-item.done .todo-title { text-decoration: line-through; color: var(--text-muted); }
+.todo-meta { font-size: 11px; color: var(--text-muted); display: flex; gap: 10px; }
+.todo-priority { margin-left: auto; flex-shrink: 0; }
+
+/* 空状态 */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.empty-state svg { width: 48px; height: 48px; margin-bottom: 10px; opacity: 0.4; }
+
+/* 分页 */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 0; font-size: 12px; color: var(--text-secondary); }
+.pagination-pages { display: flex; gap: 4px; }
+.page-btn { min-width: 28px; height: 28px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; color: var(--text-primary); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 8px; }
+.page-btn:hover { border-color: var(--primary-light); color: var(--primary); }
+.page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 图片占位框 */
+.img-placeholder { width: 100%; height: 140px; background: linear-gradient(135deg, #e8edf3 0%, #d5dde7 100%); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; gap: 6px; }
+.img-placeholder svg { width: 32px; height: 32px; opacity: 0.5; }
+
+/* 滚动消息 */
+.scroll-notice { background: var(--danger-bg); border-left: 3px solid var(--danger); padding: 8px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.scroll-notice svg { width: 16px; height: 16px; color: var(--danger); flex-shrink: 0; }
+.scroll-notice .notice-text { flex: 1; color: var(--danger); font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* 视图切换 */
+.view-container { display: none; }
+.view-container.active { display: block; }
+
+/* 里程碑节点 */
+.milestone-list { display: flex; flex-direction: column; gap: 0; }
+.milestone-node { display: flex; gap: 12px; padding: 8px 0; position: relative; }
+.milestone-node:not(:last-child)::after { content: ''; position: absolute; left: 9px; top: 24px; bottom: -8px; width: 2px; background: var(--border); }
+.milestone-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px; color: #fff; font-weight: 600; z-index: 1; }
+.milestone-dot.done { background: var(--success); }
+.milestone-dot.doing { background: var(--primary); }
+.milestone-dot.todo { background: var(--text-muted); }
+.milestone-dot.delay { background: var(--danger); }
+.milestone-info { flex: 1; }
+.milestone-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.milestone-date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* 快捷入口 */
+.quick-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.quick-item { background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius); padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.quick-item:hover { border-color: var(--primary-light); box-shadow: var(--shadow); transform: translateY(-1px); }
+.quick-item .quick-icon { width: 36px; height: 36px; border-radius: 8px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; }
+.quick-item .quick-icon svg { width: 18px; height: 18px; }
+.quick-item .quick-name { font-size: 12px; color: var(--text-primary); font-weight: 500; }
+.quick-item .quick-count { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* 进度看板 */
+.pg-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.pg-tab { height: 30px; padding: 0 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #fff; font-size: 12px; color: var(--text-secondary); }
+.pg-tab:hover { border-color: var(--primary-light); color: var(--primary); }
+.pg-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pg-kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 10px; }
+.pg-kpi { background: #fff; border: 1px solid var(--border-light); border-radius: var(--radius); padding: 12px 14px; }
+.pg-kpi.accent { border-color: #86efac; background: #f0fdf4; }
+.pg-kpi.lag { border-color: #f5c2c5; background: var(--danger-bg); }
+.pg-kpi.lead { border-color: #86efac; background: #f0fdf4; }
+.pg-kpi-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.pg-kpi-value { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.pg-kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.pg-meta-row { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+.pg-slicer-label { font-size: 11px; color: var(--text-muted); margin: 10px 0 4px; }
+.pg-slicer-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.pg-slicer-btns button { height: 26px; padding: 0 8px; border: 1px solid var(--border); background: #fff; border-radius: 2px; font-size: 11px; }
+.pg-slicer-btns button.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+.pg-qty-mini { margin-top: 8px; }
+.pg-qty-line { display: flex; gap: 8px; font-size: 11px; padding: 4px 0; border-bottom: 1px solid var(--border-light); }
+.pg-qty-line span:first-child { flex: 1; color: var(--text-secondary); }
+.pg-chip { background: var(--bg-page); border-radius: 4px; padding: 8px 12px; min-width: 120px; }
+.pg-chip .k { font-size: 11px; color: var(--text-muted); }
+.pg-chip .v { font-size: 16px; font-weight: 700; }
+.pg-schematic { position: relative; width: 100%; height: 560px; background: #f4f7fb; border: 1px solid var(--border-light); border-radius: 4px; overflow: hidden; }
+.pg-block { position: absolute; border: 1px solid rgba(255,255,255,0.7); border-radius: 3px; color: #0f172a; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 3px 5px; text-align: left; overflow: hidden; }
+.pg-block:hover, .pg-block.on { outline: 2px solid var(--primary); z-index: 2; }
+.pg-block .id { font-size: 10px; font-weight: 700; }
+.pg-block .nm { font-size: 9px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pg-block .pc { font-size: 11px; font-weight: 700; }
+.pg-cad { position: relative; width: 100%; background: #e8edf3; border-radius: 4px; overflow: hidden; }
+.pg-cad img { width: 100%; height: auto; display: block; }
+.pg-hot { position: absolute; border: 1px solid rgba(15,23,42,0.45); border-radius: 2px; opacity: 0.78; cursor: pointer; color: #0f172a; font-size: 9px; font-weight: 700; padding: 1px 2px; overflow: hidden; line-height: 1.2; }
+.pg-hot:hover, .pg-hot.on { opacity: 0.92; outline: 2px solid var(--primary); z-index: 2; }
+.pg-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; color: var(--text-secondary); }
+.pg-legend .bar { width: 140px; height: 10px; border-radius: 6px; background: linear-gradient(90deg, #eab308, #16a34a); }
+td.lag, .lag { color: var(--danger); font-weight: 600; }
+td.lead, .lead { color: var(--success); font-weight: 600; }
+@media (max-width: 1400px) { .pg-kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#4a9eff" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg>
+      <div class="sidebar-logo-text">工地总控工作台<span>Construction Control</span></div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-item active" data-view="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        项目总览
+      </div>
+      <div class="nav-item" data-view="progress">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        进度管理
+      </div>
+      <div class="nav-item" data-view="safety">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        安全隐患
+        <span class="nav-badge" id="safetyBadge">5</span>
+      </div>
+      <div class="nav-item" data-view="quality">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+        质量管理
+      </div>
+      <div class="nav-item" data-view="labor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        劳务人员
+      </div>
+      <div class="nav-item" data-view="equipment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        机械设备
+      </div>
+      <div class="nav-item" data-view="material">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        设备到货
+        <span class="nav-badge" id="deliveryBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-view="hazard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        危大工程
+        <span class="nav-badge" id="hazardBadge">2</span>
+      </div>
+      <div class="nav-item" data-view="log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        施工日志
+      </div>
+      <div class="nav-item" data-view="todo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        待办&预警
+        <span class="nav-badge" id="todoBadge">8</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div>系统版本 V2.4.1 · 自定义页面</div>
+      <div style="margin-top:3px;" id="sidebarDataStamp">设备数据截至飞书快照</div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <div class="main-area">
+    <!-- 顶部栏 -->
+    <header class="topbar">
+      <div class="topbar-project">
+        <div class="topbar-project-name">东城国际商务中心项目</div>
+        <div class="topbar-project-meta">
+          <div class="item"><span class="label">建设单位：</span>华盛置业集团</div>
+          <div class="item"><span class="label">合同工期：</span>2024.03.15 - 2026.09.30</div>
+          <div class="item"><span class="label">当前工期：</span>第 428 天 / 共 930 天</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="搜索工序、隐患、人员...">
+        </div>
+        <div class="topbar-icon-btn" title="消息通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="dot"></span>
+        </div>
+        <div class="topbar-user">
+          <div class="topbar-avatar">马</div>
+          <div class="topbar-user-info">
+            <div class="name">马胜胜</div>
+            <div class="role">项目经理</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 内容区 -->
+    <main class="content" id="contentArea">
+      <!-- 视图容器将由JS动态渲染 -->
+    </main>
+  </div>
+</div>
+
+<!-- 弹窗容器 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">详情</div>
+      <div class="modal-close" id="modalClose">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script src="./data/equipment-data.js"></script>
+<script src="./data/progress-data.js"></script>
+<script src="./data/progress-ui.js"></script>
+<script>
+/* ===== 模拟数据 ===== */
+const mockData = {
+  // 项目总览
+  overview: {
+    projectName: '东城国际商务中心项目',
+    totalProgress: 46.2,
+    stats: {
+      activeProcesses: 23,
+      pendingHazards: 5,
+      todayWorkers: 386,
+      onlineEquipment: 12,
+      pendingMaterial: 8,
+      overdueRisk: 3
+    },
+    riskLevel: 'medium',
+    milestones: [
+      { name: '基坑支护及土方开挖', date: '2024.03.15 - 2024.07.20', status: 'done' },
+      { name: '地下室结构施工', date: '2024.07.21 - 2025.01.15', status: 'done' },
+      { name: '主体结构施工（1-20层）', date: '2025.01.16 - 2025.10.30', status: 'doing' },
+      { name: '主体结构施工（21-38层）', date: '2025.11.01 - 2026.04.30', status: 'todo' },
+      { name: '机电安装及装饰装修', date: '2026.03.01 - 2026.08.15', status: 'todo' },
+      { name: '竣工验收及交付', date: '2026.08.16 - 2026.09.30', status: 'todo' }
+    ],
+    progressTrend: [
+      { month: '1月', plan: 28, actual: 27 },
+      { month: '2月', plan: 32, actual: 31 },
+      { month: '3月', plan: 36, actual: 35 },
+      { month: '4月', plan: 40, actual: 39 },
+      { month: '5月', plan: 44, actual: 43 },
+      { month: '6月', plan: 48, actual: 46.2 }
+    ],
+    hazardDistribution: [
+      { name: '高处作业', value: 12 },
+      { name: '临时用电', value: 8 },
+      { name: '脚手架', value: 6 },
+      { name: '起重吊装', value: 5 },
+      { name: '基坑工程', value: 3 },
+      { name: '其他', value: 4 }
+    ],
+    laborTrend: [
+      { month: '1月', value: 320 },
+      { month: '2月', value: 280 },
+      { month: '3月', value: 350 },
+      { month: '4月', value: 368 },
+      { month: '5月', value: 375 },
+      { month: '6月', value: 386 }
+    ]
+  },
+
+  // 进度管理 - WBS工序
+  progress: [
+    { id: 'P001', name: '地下室底板钢筋绑扎', wbs: '1.2.1', planStart: '2024-08-10', planEnd: '2024-09-05', actualStart: '2024-08-12', actualEnd: '2024-09-08', progress: 100, status: 'completed', milestone: false, responsible: '张建国' },
+    { id: 'P002', name: '地下室负三层结构施工', wbs: '1.2.2', planStart: '2024-09-06', planEnd: '2024-10-20', actualStart: '2024-09-09', actualEnd: '2024-10-25', progress: 100, status: 'completed', milestone: false, responsible: '张建国' },
+    { id: 'P003', name: '地下室负二层结构施工', wbs: '1.2.3', planStart: '2024-10-21', planEnd: '2024-12-05', actualStart: '2024-10-26', actualEnd: '2024-12-10', progress: 100, status: 'completed', milestone: false, responsible: '李卫东' },
+    { id: 'P004', name: '地下室负一层结构施工', wbs: '1.2.4', planStart: '2024-12-06', planEnd: '2025-01-15', actualStart: '2024-12-11', actualEnd: '2025-01-20', progress: 100, status: 'completed', milestone: true, responsible: '李卫东' },
+    { id: 'P005', name: '主体1-5层结构施工', wbs: '2.1.1', planStart: '2025-01-16', planEnd: '2025-04-10', actualStart: '2025-01-21', actualEnd: '2025-04-18', progress: 100, status: 'completed', milestone: false, responsible: '王海涛' },
+    { id: 'P006', name: '主体6-10层结构施工', wbs: '2.1.2', planStart: '2025-04-11', planEnd: '2025-06-30', actualStart: '2025-04-19', actualEnd: '2025-07-08', progress: 100, status: 'completed', milestone: false, responsible: '王海涛' },
+    { id: 'P007', name: '主体11-15层结构施工', wbs: '2.1.3', planStart: '2025-07-01', planEnd: '2025-09-20', actualStart: '2025-07-09', actualEnd: '', progress: 85, status: 'doing', milestone: false, responsible: '赵志明' },
+    { id: 'P008', name: '主体16-20层结构施工', wbs: '2.1.4', planStart: '2025-09-21', planEnd: '2025-10-30', actualStart: '', actualEnd: '', progress: 0, status: 'notstarted', milestone: true, responsible: '赵志明' },
+    { id: 'P009', name: '1-10层砌体工程', wbs: '2.2.1', planStart: '2025-05-01', planEnd: '2025-08-15', actualStart: '2025-05-10', actualEnd: '', progress: 72, status: 'doing', milestone: false, responsible: '陈大勇' },
+    { id: 'P010', name: '1-10层内墙抹灰', wbs: '2.3.1', planStart: '2025-07-01', planEnd: '2025-09-30', actualStart: '2025-07-15', actualEnd: '', progress: 45, status: 'delay', milestone: false, responsible: '陈大勇' },
+    { id: 'P011', name: '地下室机电管线安装', wbs: '3.1.1', planStart: '2025-02-01', planEnd: '2025-06-30', actualStart: '2025-02-10', actualEnd: '', progress: 90, status: 'doing', milestone: false, responsible: '刘建华' },
+    { id: 'P012', name: '主体1-10层机电预埋', wbs: '3.1.2', planStart: '2025-03-01', planEnd: '2025-08-31', actualStart: '2025-03-05', actualEnd: '', progress: 68, status: 'doing', milestone: false, responsible: '刘建华' },
+    { id: 'P013', name: '外脚手架搭设（11-20层）', wbs: '4.1.1', planStart: '2025-08-01', planEnd: '2025-09-15', actualStart: '2025-08-05', actualEnd: '', progress: 60, status: 'delay', milestone: false, responsible: '孙国强' },
+    { id: 'P014', name: '施工电梯安装及验收', wbs: '4.2.1', planStart: '2025-01-10', planEnd: '2025-01-25', actualStart: '2025-01-12', actualEnd: '2025-01-28', progress: 100, status: 'completed', milestone: true, responsible: '周文斌' }
+  ],
+
+  // 安全隐患
+  safety: [
+    { id: 'S001', location: '12层东侧外脚手架', level: 'major', finder: '李安全', findTime: '2025-08-25 09:15', responsible: '孙国强', deadline: '2025-08-27 18:00', status: 'pending', type: '脚手架', desc: '12层东侧外脚手架连墙件缺失3处，架体晃动明显，存在倾覆风险。', photos: 2 },
+    { id: 'S002', location: '11层楼板预留洞口', level: 'major', finder: '王监督', findTime: '2025-08-25 14:30', responsible: '赵志明', deadline: '2025-08-26 18:00', status: 'rectifying', type: '高处作业', desc: '11层3个楼板预留洞口（尺寸约800x800mm）未按规范设置硬质防护盖板及警示标志。', photos: 3 },
+    { id: 'S003', location: '地下室负二层配电箱', level: 'general', finder: '李安全', findTime: '2025-08-24 10:20', responsible: '刘建华', deadline: '2025-08-28 18:00', status: 'pending', type: '临时用电', desc: '地下室负二层2号分配电箱未做接地保护，箱门损坏无法关闭，周边堆放易燃材料。', photos: 1 },
+    { id: 'S004', location: '10层钢筋加工区', level: 'general', finder: '张巡查', findTime: '2025-08-24 16:45', responsible: '王海涛', deadline: '2025-08-27 12:00', status: 'rectifying', type: '机械伤害', desc: '10层钢筋弯曲机防护罩缺失，操作人员未佩戴防护手套，加工区材料堆放混乱。', photos: 2 },
+    { id: 'S005', location: '基坑南侧边坡', level: 'major', finder: '王监督', findTime: '2025-08-23 11:00', responsible: '张建国', deadline: '2025-08-25 18:00', status: 'closed', type: '基坑工程', desc: '基坑南侧边坡出现长约5米的裂缝，宽度约3-5mm，需立即加固处理并加强监测。', photos: 4 },
+    { id: 'S006', location: '8层楼梯间', level: 'general', finder: '李安全', findTime: '2025-08-23 09:30', responsible: '陈大勇', deadline: '2025-08-26 18:00', status: 'closed', type: '高处作业', desc: '8层楼梯间临边防护栏杆高度不足（仅0.9m），且未设置挡脚板。', photos: 1 },
+    { id: 'S007', location: '现场材料堆场', level: 'general', finder: '张巡查', findTime: '2025-08-22 15:20', responsible: '周文斌', deadline: '2025-08-25 18:00', status: 'closed', type: '消防安全', desc: '现场木材堆场与动火作业区安全距离不足，灭火器配备数量不够且部分已过期。', photos: 2 },
+    { id: 'S008', location: '13层塔吊作业区', level: 'major', finder: '王监督', findTime: '2025-08-26 08:45', responsible: '周文斌', deadline: '2025-08-26 18:00', status: 'pending', type: '起重吊装', desc: '13层塔吊吊运钢筋时，吊物下方有工人作业，未设置警戒区域，信号司索工不在岗。', photos: 1 }
+  ],
+
+  // 质量管理
+  quality: {
+    inspections: [
+      { id: 'Q001', type: '质量巡检', location: '11层剪力墙', inspector: '黄质检', time: '2025-08-25 10:30', status: 'qualified', issues: 0, desc: '11层剪力墙混凝土外观质量良好，无蜂窝麻面，垂直度偏差在允许范围内。' },
+      { id: 'Q002', type: '质量巡检', location: '10层梁板模板', inspector: '黄质检', time: '2025-08-25 14:00', status: 'unqualified', issues: 2, desc: '10层梁板模板支撑体系部分立杆间距偏大，剪刀撑设置不连续，需整改。' },
+      { id: 'Q003', type: '工序验收', location: '9层钢筋绑扎', inspector: '黄质检', time: '2025-08-24 16:00', status: 'qualified', issues: 0, desc: '9层梁板钢筋绑扎规格、间距、保护层厚度符合设计及规范要求，同意进入下道工序。' },
+      { id: 'Q004', type: '工序验收', location: '地下室负一层防水', inspector: '黄质检', time: '2025-08-24 11:00', status: 'rectifying', issues: 1, desc: '地下室负一层外墙防水卷材搭接宽度不足，部分区域有气泡，需返工处理。' },
+      { id: 'Q005', type: '质量巡检', location: '8层砌体工程', inspector: '李质检', time: '2025-08-23 15:30', status: 'qualified', issues: 0, desc: '8层砌体灰缝饱满度符合要求，拉结筋设置规范，墙面垂直度合格。' },
+      { id: 'Q006', type: '工序验收', location: '10层混凝土浇筑', inspector: '李质检', time: '2025-08-23 09:00', status: 'qualified', issues: 0, desc: '10层混凝土浇筑过程旁站监理，振捣密实，试块留置符合要求。' }
+    ],
+    issues: [
+      { id: 'QI001', title: '10层模板支撑立杆间距偏大', level: '一般', source: 'Q002', findTime: '2025-08-25', responsible: '赵志明', deadline: '2025-08-27', status: '整改中' },
+      { id: 'QI002', title: '10层模板剪刀撑设置不连续', level: '一般', source: 'Q002', findTime: '2025-08-25', responsible: '赵志明', deadline: '2025-08-27', status: '整改中' },
+      { id: 'QI003', title: '地下室防水卷材搭接宽度不足', level: '严重', source: 'Q004', findTime: '2025-08-24', responsible: '张建国', deadline: '2025-08-26', status: '整改中' },
+      { id: 'QI004', title: '7层混凝土表面存在蜂窝麻面', level: '一般', source: '巡检', findTime: '2025-08-20', responsible: '王海涛', deadline: '2025-08-23', status: '已闭环' },
+      { id: 'QI005', title: '6层砌体灰缝不饱满', level: '一般', source: '巡检', findTime: '2025-08-18', responsible: '陈大勇', deadline: '2025-08-21', status: '已闭环' }
+    ],
+    pendingAcceptance: [
+      { id: 'A001', process: '11层钢筋绑扎', applyTime: '2025-08-26 08:30', applicant: '赵志明', status: '待验收' },
+      { id: 'A002', process: '10层模板安装', applyTime: '2025-08-25 17:00', applicant: '赵志明', status: '待验收' },
+      { id: 'A003', process: '地下室负一层防水保护层', applyTime: '2025-08-25 15:30', applicant: '张建国', status: '待验收' }
+    ],
+    unqualifiedStats: [
+      { month: '3月', count: 8 },
+      { month: '4月', count: 6 },
+      { month: '5月', count: 5 },
+      { month: '6月', count: 7 },
+      { month: '7月', count: 4 },
+      { month: '8月', count: 3 }
+    ]
+  },
+
+  // 劳务人员
+  labor: {
+    summary: { total: 412, present: 386, absent: 26, attendanceRate: 93.7 },
+    teams: [
+      { id: 'T001', name: '土建一队', leader: '张建国', total: 85, present: 82, absent: 3, type: '土建施工' },
+      { id: 'T002', name: '土建二队', leader: '李卫东', total: 78, present: 74, absent: 4, type: '土建施工' },
+      { id: 'T003', name: '钢筋班组', leader: '王海涛', total: 45, present: 43, absent: 2, type: '钢筋加工' },
+      { id: 'T004', name: '木工班组', leader: '赵志明', total: 52, present: 48, absent: 4, type: '模板施工' },
+      { id: 'T005', name: '架子班组', leader: '孙国强', total: 28, present: 27, absent: 1, type: '脚手架' },
+      { id: 'T006', name: '机电班组', leader: '刘建华', total: 42, present: 40, absent: 2, type: '机电安装' },
+      { id: 'T007', name: '砌筑班组', leader: '陈大勇', total: 35, present: 32, absent: 3, type: '砌筑抹灰' },
+      { id: 'T008', name: '起重班组', leader: '周文斌', total: 18, present: 17, absent: 1, type: '起重吊装' },
+      { id: 'T009', name: '后勤安保', leader: '吴管理', total: 29, present: 23, absent: 6, type: '后勤服务' }
+    ],
+    specialWorkers: [
+      { id: 'SW001', name: '陈塔吊', type: '建筑起重机械司机（塔吊）', certNo: '粤A-2023-T-01234', expireDate: '2026-03-15', status: 'valid' },
+      { id: 'SW002', name: '刘电梯', type: '建筑起重机械司机（施工电梯）', certNo: '粤A-2023-T-01235', expireDate: '2025-12-20', status: 'warning' },
+      { id: 'SW003', name: '赵信号', type: '建筑起重信号司索工', certNo: '粤A-2023-X-00567', expireDate: '2026-06-10', status: 'valid' },
+      { id: 'SW004', name: '钱电焊', type: '建筑电焊工', certNo: '粤A-2023-H-00890', expireDate: '2025-09-30', status: 'warning' },
+      { id: 'SW005', name: '孙架子', type: '建筑架子工', certNo: '粤A-2023-J-00345', expireDate: '2026-01-20', status: 'valid' },
+      { id: 'SW006', name: '李电工', type: '建筑电工', certNo: '粤A-2023-D-00123', expireDate: '2025-08-15', status: 'expired' },
+      { id: 'SW007', name: '周登高', type: '高处作业吊篮安装拆卸工', certNo: '粤A-2023-G-00456', expireDate: '2026-04-08', status: 'valid' },
+      { id: 'SW008', name: '吴司机', type: '建筑起重机械司机（塔吊）', certNo: '粤A-2023-T-01236', expireDate: '2025-10-25', status: 'warning' }
+    ],
+    absentToday: [
+      { name: '王某某', team: '土建一队', reason: '病假', days: 1 },
+      { name: '李某某', team: '土建二队', reason: '事假', days: 1 },
+      { name: '张某某', team: '木工班组', reason: '病假', days: 2 },
+      { name: '赵某某', team: '砌筑班组', reason: '未请假', days: 1 },
+      { name: '刘某某', team: '机电班组', reason: '调休', days: 1 }
+    ]
+  },
+
+  // 机械设备
+  equipment: [
+    { id: 'E001', name: '1#塔式起重机', model: 'QTZ80(TC6013)', type: '塔吊', location: '主楼北侧', status: 'running', operator: '陈塔吊', lastMaintenance: '2025-08-10', nextMaintenance: '2025-09-10', inspectExpire: '2025-11-15', runHours: 1856 },
+    { id: 'E002', name: '2#塔式起重机', model: 'QTZ80(TC6013)', type: '塔吊', location: '裙楼东侧', status: 'running', operator: '吴司机', lastMaintenance: '2025-08-15', nextMaintenance: '2025-09-15', inspectExpire: '2025-12-20', runHours: 1623 },
+    { id: 'E003', name: '1#施工升降机', model: 'SC200/200', type: '施工电梯', location: '主楼南侧', status: 'running', operator: '刘电梯', lastMaintenance: '2025-08-12', nextMaintenance: '2025-09-12', inspectExpire: '2025-10-30', runHours: 986 },
+    { id: 'E004', name: '2#施工升降机', model: 'SC200/200', type: '施工电梯', location: '裙楼西侧', status: 'idle', operator: '—', lastMaintenance: '2025-08-05', nextMaintenance: '2025-09-05', inspectExpire: '2025-11-10', runHours: 756 },
+    { id: 'E005', name: '1#挖掘机', model: 'CAT320D', type: '挖掘机', location: '材料堆场', status: 'maintenance', operator: '黄挖机', lastMaintenance: '2025-08-25', nextMaintenance: '2025-09-25', inspectExpire: '—', runHours: 3240 },
+    { id: 'E006', name: '钢筋弯曲机', model: 'GW40', type: '钢筋加工', location: '10层加工区', status: 'fault', operator: '—', lastMaintenance: '2025-07-20', nextMaintenance: '2025-08-20', inspectExpire: '—', runHours: 560 },
+    { id: 'E007', name: '钢筋切断机', model: 'GQ40', type: '钢筋加工', location: '10层加工区', status: 'running', operator: '周钢筋', lastMaintenance: '2025-08-01', nextMaintenance: '2025-09-01', inspectExpire: '—', runHours: 480 },
+    { id: 'E008', name: '混凝土输送泵', model: 'HBT80', type: '混凝土设备', location: '主楼北侧', status: 'idle', operator: '—', lastMaintenance: '2025-08-18', nextMaintenance: '2025-09-18', inspectExpire: '—', runHours: 1120 },
+    { id: 'E009', name: '1#柴油发电机', model: '200KW', type: '发电设备', location: '配电室旁', status: 'standby', operator: '李电工', lastMaintenance: '2025-07-15', nextMaintenance: '2025-10-15', inspectExpire: '—', runHours: 85 },
+    { id: 'E010', name: '电焊机', model: 'BX1-500', type: '焊接设备', location: '地下室负一层', status: 'running', operator: '钱电焊', lastMaintenance: '2025-08-08', nextMaintenance: '2025-09-08', inspectExpire: '—', runHours: 320 },
+    { id: 'E011', name: '1#物料提升机', model: 'SS100/100', type: '提升设备', location: '裙楼南侧', status: 'running', operator: '郑提升', lastMaintenance: '2025-08-14', nextMaintenance: '2025-09-14', inspectExpire: '2025-11-05', runHours: 420 },
+    { id: 'E012', name: '空压机', model: '13立方', type: '气动设备', location: '地下室负二层', status: 'running', operator: '—', lastMaintenance: '2025-08-03', nextMaintenance: '2025-09-03', inspectExpire: '—', runHours: 210 }
+  ],
+
+  // 材料物资
+  material: {
+    inventory: [
+      { id: 'M001', name: 'HRB400螺纹钢', spec: 'Φ25', unit: '吨', stock: 85.6, minStock: 50, maxStock: 200, status: 'normal', location: '钢筋堆场A区' },
+      { id: 'M002', name: 'HRB400螺纹钢', spec: 'Φ20', unit: '吨', stock: 42.3, minStock: 40, maxStock: 150, status: 'warning', location: '钢筋堆场A区' },
+      { id: 'M003', name: 'HRB400螺纹钢', spec: 'Φ16', unit: '吨', stock: 18.5, minStock: 30, maxStock: 120, status: 'low', location: '钢筋堆场B区' },
+      { id: 'M004', name: '商品混凝土', spec: 'C35', unit: '立方米', stock: 0, minStock: 0, maxStock: 0, status: 'custom', location: '按需供应' },
+      { id: 'M005', name: '商品混凝土', spec: 'C30', unit: '立方米', stock: 0, minStock: 0, maxStock: 0, status: 'custom', location: '按需供应' },
+      { id: 'M006', name: '木模板', spec: '1830x915x15mm', unit: '张', stock: 320, minStock: 200, maxStock: 800, status: 'normal', location: '模板堆场' },
+      { id: 'M007', name: '木方', spec: '50x100x4000mm', unit: '根', stock: 560, minStock: 300, maxStock: 1000, status: 'normal', location: '模板堆场' },
+      { id: 'M008', name: '钢管', spec: 'Φ48x3.5mm', unit: '米', stock: 8500, minStock: 5000, maxStock: 15000, status: 'normal', location: '架料堆场' },
+      { id: 'M009', name: '扣件', spec: '十字/旋转/对接', unit: '个', stock: 12500, minStock: 8000, maxStock: 20000, status: 'normal', location: '架料堆场' },
+      { id: 'M010', name: '加气混凝土砌块', spec: '600x200x200mm', unit: '立方米', stock: 85, minStock: 60, maxStock: 300, status: 'normal', location: '砌体材料区' },
+      { id: 'M011', name: '水泥砂浆', spec: 'M5', unit: '立方米', stock: 12, minStock: 10, maxStock: 50, status: 'normal', location: '砂浆搅拌区' },
+      { id: 'M012', name: '防水卷材', spec: 'SBS 4mm', unit: '卷', stock: 35, minStock: 50, maxStock: 200, status: 'low', location: '防水材料区' },
+      { id: 'M013', name: 'PVC电线管', spec: 'DN20', unit: '米', stock: 2800, minStock: 1500, maxStock: 5000, status: 'normal', location: '机电材料区' },
+      { id: 'M014', name: '镀锌钢管', spec: 'DN50', unit: '米', stock: 420, minStock: 300, maxStock: 1000, status: 'normal', location: '机电材料区' },
+      { id: 'M015', name: '电缆', spec: 'YJV 3x95+2x50', unit: '米', stock: 180, minStock: 100, maxStock: 500, status: 'normal', location: '机电材料区' }
+    ],
+    incoming: [
+      { id: 'IN001', material: 'HRB400螺纹钢 Φ22', quantity: '60吨', supplier: '韶钢集团', arriveTime: '2025-08-26 14:00', status: 'pending', inspector: '周材料' },
+      { id: 'IN002', material: '商品混凝土 C35', quantity: '120立方米', supplier: '华润混凝土', arriveTime: '2025-08-26 08:00', status: 'accepted', inspector: '周材料' },
+      { id: 'IN003', material: '木模板 1830x915x15mm', quantity: '200张', supplier: '金福木业', arriveTime: '2025-08-25 16:30', status: 'accepted', inspector: '吴材料' },
+      { id: 'IN004', material: '加气混凝土砌块', quantity: '80立方米', supplier: '恒达建材', arriveTime: '2025-08-25 10:00', status: 'rejected', inspector: '吴材料', remark: '部分砌块破损率超标，已退回' }
+    ],
+    inspection: [
+      { id: 'MI001', material: 'HRB400螺纹钢 Φ25', batch: '20250820-01', sampleTime: '2025-08-20', result: '合格', reportNo: 'JC2025082001' },
+      { id: 'MI002', material: '商品混凝土 C30', batch: '20250822-03', sampleTime: '2025-08-22', result: '合格', reportNo: 'JC2025082203' },
+      { id: 'MI003', material: '防水卷材 SBS 4mm', batch: '20250815-02', sampleTime: '2025-08-15', result: '合格', reportNo: 'JC2025081502' },
+      { id: 'MI004', material: '加气混凝土砌块', batch: '20250818-01', sampleTime: '2025-08-18', result: '待检', reportNo: '—' }
+    ],
+    consumption: [
+      { month: '3月', steel: 180, concrete: 2300, wood: 450 },
+      { month: '4月', steel: 210, concrete: 2600, wood: 520 },
+      { month: '5月', steel: 195, concrete: 2450, wood: 480 },
+      { month: '6月', steel: 220, concrete: 2800, wood: 550 },
+      { month: '7月', steel: 205, concrete: 2550, wood: 500 },
+      { month: '8月', steel: 175, concrete: 2100, wood: 420 }
+    ]
+  },
+
+  // 危大工程
+  hazard: [
+    { id: 'H001', name: '深基坑工程', location: '项目整体地下室区域', riskLevel: 'high', planStatus: '已审批', expertReview: '已通过',交底Status: '已交底', constructionStatus: '已完成', acceptanceStatus: '已验收销号', desc: '基坑开挖深度12.5米，采用排桩+内支撑支护体系，已按专项方案施工完成并通过验收。', manager: '张建国', startDate: '2024-03-20', endDate: '2024-07-15' },
+    { id: 'H002', name: '高大模板支撑体系', location: '主楼1-3层大堂区域', riskLevel: 'high', planStatus: '已审批', expertReview: '已通过',交底Status: '已交底', constructionStatus: '施工中', acceptanceStatus: '待验收', desc: '大堂层高10.8米，模板支撑高度超过8米，属于超过一定规模的危大工程，需严格按专家论证方案施工。', manager: '赵志明', startDate: '2025-02-10', endDate: '2025-09-30' },
+    { id: 'H003', name: '起重吊装工程', location: '主体结构施工区域', riskLevel: 'high', planStatus: '已审批', expertReview: '已通过',交底Status: '已交底', constructionStatus: '施工中', acceptanceStatus: '持续监控', desc: '采用两台QTZ80塔吊进行结构吊装作业，吊装重量最大约6吨，需严格执行十不吊原则。', manager: '周文斌', startDate: '2025-01-15', endDate: '2026-04-30' },
+    { id: 'H004', name: '悬挑式脚手架', location: '主楼4层以上外脚手架', riskLevel: 'medium', planStatus: '已审批', expertReview: '无需论证',交底Status: '已交底', constructionStatus: '施工中', acceptanceStatus: '分段验收', desc: '采用工字钢悬挑脚手架，每6层悬挑一次，悬挑钢梁采用16号工字钢，斜拉钢丝绳采用6×19+1。', manager: '孙国强', startDate: '2025-04-01', endDate: '2026-03-31' },
+    { id: 'H005', name: '施工升降机安装拆卸', location: '主楼南侧、裙楼西侧', riskLevel: 'medium', planStatus: '已审批', expertReview: '无需论证',交底Status: '已交底', constructionStatus: '已完成', acceptanceStatus: '已验收', desc: '两台SC200/200施工升降机已安装完成并通过第三方检测，目前正常运行中。', manager: '周文斌', startDate: '2025-01-10', endDate: '2025-01-28' },
+    { id: 'H006', name: '高处作业吊篮', location: '外墙装饰施工区域', riskLevel: 'medium', planStatus: '编制中', expertReview: '待论证',交底Status: '未交底', constructionStatus: '未开始', acceptanceStatus: '待验收', desc: '计划用于外墙幕墙及涂料施工，目前专项方案正在编制中，预计9月开始安装。', manager: '孙国强', startDate: '2025-09-15', endDate: '2026-06-30' }
+  ],
+
+  // 施工日志
+  logs: [
+    { id: 'L001', date: '2025-08-26', weather: '晴，28-35℃', writer: '马胜胜', content: '今日主要施工内容：11层剪力墙钢筋绑扎、10层模板安装、9层混凝土养护、地下室负一层机电管线安装。现场出勤386人，塔吊2台运行正常，施工电梯1台运行。上午进行了11层钢筋隐蔽工程预验收，发现2处箍筋间距偏差，已要求整改。下午市质监站突击检查，对现场安全文明施工给予肯定。明日计划：11层钢筋验收并浇筑混凝土、10层模板加固。', issues: '11层部分箍筋间距偏大，已整改', materials: '进场C35混凝土120方、螺纹钢60吨', equipment: '塔吊、施工电梯运行正常，钢筋弯曲机故障待修' },
+    { id: 'L002', date: '2025-08-25', weather: '多云，27-33℃', writer: '李卫东', content: '今日主要施工内容：11层墙柱钢筋绑扎、10层梁板模板支设、8层砌体施工、地下室防水保护层施工。现场出勤378人。上午安全检查发现12层外脚手架连墙件缺失3处，已下达整改通知单，要求27日前完成。下午进行了10层模板支撑体系专项检查。', issues: '12层外脚手架连墙件缺失，整改中', materials: '进场木模板200张', equipment: '所有设备运行正常' },
+    { id: 'L003', date: '2025-08-24', weather: '雷阵雨，26-31℃', writer: '王海涛', content: '今日上午晴，下午雷阵雨。主要施工内容：10层梁板钢筋绑扎（上午）、9层混凝土浇筑（上午）、下午因雨暂停室外作业，进行室内砌体及机电安装。现场出勤365人。雨后对基坑及边坡进行了巡查，未发现异常。', issues: '下午因雨停工约3小时', materials: '进场C30混凝土80方', equipment: '雨后对塔吊、电梯进行了安全检查' },
+    { id: 'L004', date: '2025-08-23', weather: '晴，28-36℃', writer: '赵志明', content: '今日高温天气，调整作业时间为早6点至11点，下午3点至7点。主要施工内容：10层梁板模板支设、9层钢筋绑扎、8层砌体、地下室机电安装。现场出勤372人。发放防暑降温药品，未发生中暑事件。上午检查发现11层楼板预留洞口未防护，已立即整改。', issues: '11层预留洞口未防护，已整改', materials: '无大宗材料进场', equipment: '高温时段加强设备巡检' },
+    { id: 'L005', date: '2025-08-22', weather: '晴转多云，27-34℃', writer: '张建国', content: '今日主要施工内容：9层墙柱模板安装、8层梁板钢筋绑扎、7层混凝土养护、地下室负二层机电管线安装。现场出勤380人。上午公司季度安全大检查，检查组对现场管理总体满意，提出3项整改建议。下午进行了消防应急演练。', issues: '公司检查提出3项建议，已落实整改', materials: '进场加气块80方（部分不合格已退回）', equipment: '所有设备运行正常' }
+  ],
+
+  // 待办&风险预警
+  todos: [
+    { id: 'TD001', title: '12层外脚手架连墙件缺失整改', type: '隐患整改', priority: 'high', deadline: '2025-08-27', responsible: '孙国强', status: 'pending', source: '安全检查' },
+    { id: 'TD002', title: '11层楼板预留洞口防护整改', type: '隐患整改', priority: 'high', deadline: '2025-08-26', responsible: '赵志明', status: 'pending', source: '安全检查' },
+    { id: 'TD003', title: '13层塔吊吊运警戒区域设置', type: '隐患整改', priority: 'high', deadline: '2025-08-26', responsible: '周文斌', status: 'pending', source: '安全检查' },
+    { id: 'TD004', title: '10层模板支撑体系整改', type: '质量整改', priority: 'medium', deadline: '2025-08-27', responsible: '赵志明', status: 'doing', source: '质量巡检' },
+    { id: 'TD005', title: '地下室防水卷材返工', type: '质量整改', priority: 'high', deadline: '2025-08-26', responsible: '张建国', status: 'doing', source: '工序验收' },
+    { id: 'TD006', title: '建筑电工李电工证件复审', type: '证件到期', priority: 'high', deadline: '2025-08-25', responsible: '吴管理', status: 'overdue', source: '人员管理' },
+    { id: 'TD007', title: '1#挖掘机月度保养', type: '设备维保', priority: 'medium', deadline: '2025-08-25', responsible: '周文斌', status: 'doing', source: '设备管理' },
+    { id: 'TD008', title: 'HRB400螺纹钢Φ16采购进场', type: '材料补充', priority: 'high', deadline: '2025-08-28', responsible: '周材料', status: 'pending', source: '库存预警' },
+    { id: 'TD009', title: '防水卷材库存补充采购', type: '材料补充', priority: 'medium', deadline: '2025-08-30', responsible: '周材料', status: 'pending', source: '库存预警' },
+    { id: 'TD010', title: '11层钢筋绑扎工序验收', type: '工序验收', priority: 'medium', deadline: '2025-08-26', responsible: '黄质检', status: 'pending', source: '施工申请' },
+    { id: 'TD011', title: '10层模板安装工序验收', type: '工序验收', priority: 'medium', deadline: '2025-08-26', responsible: '黄质检', status: 'pending', source: '施工申请' },
+    { id: 'TD012', title: '主体16-20层施工方案交底', type: '方案交底', priority: 'low', deadline: '2025-09-05', responsible: '赵志明', status: 'pending', source: '进度计划' }
+  ],
+  riskAlerts: [
+    { id: 'RA001', level: 'high', title: '11层内墙抹灰进度滞后', desc: '计划完成60%，实际仅完成45%，滞后约15%，需增加作业人员。', time: '2025-08-26 08:00', type: '进度滞后' },
+    { id: 'RA002', level: 'high', title: '外脚手架搭设进度滞后', desc: '11-20层外脚手架搭设计划完成80%，实际仅60%，可能影响后续主体施工。', time: '2025-08-26 08:00', type: '进度滞后' },
+    { id: 'RA003', level: 'medium', title: 'HRB400螺纹钢Φ16库存不足', desc: '当前库存18.5吨，低于最低库存30吨，预计2天后断供，已通知采购。', time: '2025-08-25 17:00', type: '材料预警' },
+    { id: 'RA004', level: 'medium', title: '建筑电工证件已过期', desc: '李电工的建筑电工特种作业操作证已于2025-08-15过期，需立即停止作业并安排复审。', time: '2025-08-25 09:00', type: '证件预警' },
+    { id: 'RA005', level: 'low', title: '1#挖掘机保养超期', desc: '1#挖掘机月度保养已超期1天，目前正在进行保养作业。', time: '2025-08-26 08:00', type: '设备预警' },
+    { id: 'RA006', level: 'medium', title: '近期高温天气持续', desc: '未来一周最高气温35-37℃，需做好防暑降温措施，合理调整作业时间。', time: '2025-08-26 07:30', type: '环境预警' }
+  ]
+};
+
+/* ===== 状态管理 ===== */
+const state = {
+  currentView: 'overview',
+  charts: {},
+  filters: {
+    progress: { tab: 'overview', unit: 'Overall', cwa: 'all', workClass: 'all', source: 'cc6', mapMode: 'schematic', mapUnit: '605' },
+    safety: { status: 'all', level: 'all' },
+    quality: { type: 'all', status: 'all' },
+    equipment: { status: 'all', type: 'all' },
+    material: { status: 'all', discipline: 'all', critical: 'all', keyword: '', page: 1 },
+    todo: { status: 'all', priority: 'all' }
+  }
+};
+
+/* ===== 工具函数 ===== */
+function $(selector) { return document.querySelector(selector); }
+function $$(selector) { return document.querySelectorAll(selector); }
+function createElement(tag, className, html) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (html !== undefined) el.innerHTML = html;
+  return el;
+}
+function statusTag(status) {
+  const map = {
+    'completed': { text: '已完成', cls: 'tag-success' },
+    'doing': { text: '进行中', cls: 'tag-primary' },
+    'notstarted': { text: '未开始', cls: 'tag-plain' },
+    'delay': { text: '已延期', cls: 'tag-danger' },
+    'pending': { text: '待整改', cls: 'tag-danger' },
+    'rectifying': { text: '整改中', cls: 'tag-warning' },
+    'closed': { text: '已闭环', cls: 'tag-success' },
+    'qualified': { text: '合格', cls: 'tag-success' },
+    'unqualified': { text: '不合格', cls: 'tag-danger' },
+    'running': { text: '运行中', cls: 'tag-success' },
+    'idle': { text: '闲置', cls: 'tag-info' },
+    'maintenance': { text: '保养中', cls: 'tag-warning' },
+    'fault': { text: '故障', cls: 'tag-danger' },
+    'standby': { text: '备用', cls: 'tag-info' },
+    'normal': { text: '正常', cls: 'tag-success' },
+    'warning': { text: '预警', cls: 'tag-warning' },
+    'low': { text: '库存不足', cls: 'tag-danger' },
+    'custom': { text: '按需供应', cls: 'tag-info' },
+    'accepted': { text: '已验收', cls: 'tag-success' },
+    'rejected': { text: '已拒收', cls: 'tag-danger' },
+    'valid': { text: '有效', cls: 'tag-success' },
+    'expired': { text: '已过期', cls: 'tag-danger' },
+    'high': { text: '高风险', cls: 'tag-danger' },
+    'medium': { text: '中风险', cls: 'tag-warning' },
+    'low_risk': { text: '低风险', cls: 'tag-success' },
+    'major': { text: '重大', cls: 'tag-danger' },
+    'general': { text: '一般', cls: 'tag-warning' },
+    '待验收': { text: '待验收', cls: 'tag-warning' },
+    '整改中': { text: '整改中', cls: 'tag-warning' },
+    '已闭环': { text: '已闭环', cls: 'tag-success' },
+    '已完成': { text: '已完成', cls: 'tag-success' },
+    '施工中': { text: '施工中', cls: 'tag-primary' },
+    '未开始': { text: '未开始', cls: 'tag-plain' },
+    '已审批': { text: '已审批', cls: 'tag-success' },
+    '编制中': { text: '编制中', cls: 'tag-warning' },
+    '已通过': { text: '已通过', cls: 'tag-success' },
+    '待论证': { text: '待论证', cls: 'tag-warning' },
+    '无需论证': { text: '无需论证', cls: 'tag-info' },
+    '已交底': { text: '已交底', cls: 'tag-success' },
+    '未交底': { text: '未交底', cls: 'tag-plain' },
+    '已验收销号': { text: '已销号', cls: 'tag-success' },
+    '待验收': { text: '待验收', cls: 'tag-warning' },
+    '持续监控': { text: '监控中', cls: 'tag-primary' },
+    '分段验收': { text: '分段验收', cls: 'tag-primary' },
+    'overdue': { text: '已逾期', cls: 'tag-danger' },
+    'done': { text: '已完成', cls: 'tag-success' },
+    '未到货': { text: '未到货', cls: 'tag-danger' },
+    '已到货在库': { text: '已到货在库', cls: 'tag-warning' },
+    '已发放': { text: '已发放', cls: 'tag-success' },
+    'LLI': { text: 'LLI', cls: 'tag-danger' },
+    'Critical': { text: 'Critical', cls: 'tag-warning' },
+    'Other': { text: 'Other', cls: 'tag-plain' }
+  };
+  const item = map[status] || { text: status, cls: 'tag-info' };
+  return `<span class="tag ${item.cls}">${item.text}</span>`;
+}
+function riskLevelTag(level) {
+  const map = {
+    'low': { text: '低风险', cls: 'risk-low' },
+    'medium': { text: '中风险', cls: 'risk-medium' },
+    'high': { text: '高风险', cls: 'risk-high' }
+  };
+  const item = map[level] || { text: level, cls: 'risk-medium' };
+  return `<span class="risk-level ${item.cls}"><span class="risk-dot"></span>${item.text}</span>`;
+}
+function progressBar(value, cls) {
+  const color = cls || (value >= 80 ? 'success' : value >= 50 ? 'primary' : value >= 30 ? 'warning' : 'danger');
+  return `<div class="progress-with-text"><div class="progress-bar"><div class="fill ${color}" style="width:${value}%"></div></div><span class="progress-text">${value}%</span></div>`;
+}
+
+function getEquipmentItems() {
+  return (window.EQUIPMENT_DATA && EQUIPMENT_DATA.items) || [];
+}
+function getEquipmentMeta() {
+  return window.EQUIPMENT_DATA || { snapshot_date: '', count: 0, items: [] };
+}
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function parseDay(s) {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+function isOverdueItem(item, today) {
+  if (item.status !== '未到货' || !item.planned_date) return false;
+  const d = parseDay(item.planned_date);
+  return !!(d && d < (today || startOfToday()));
+}
+function qtyOf(item) { return Number(item.quantity) || 0; }
+function displayEquipName(name) {
+  if (!name) return '—';
+  const i = name.lastIndexOf(' / ');
+  return i >= 0 ? name.slice(i + 3) : name;
+}
+function formatDay(s) { return s || '—'; }
+function sumQty(list) { return list.reduce((n, i) => n + qtyOf(i), 0); }
+function weightOf(item) { return Number(item.weight_t) || 0; }
+function sumWeight(list) { return list.reduce((n, i) => n + weightOf(i), 0); }
+function round1(n) { return Math.round(n * 10) / 10; }
+function equipmentKpis() {
+  const items = getEquipmentItems();
+  const today = startOfToday();
+  const notArrived = items.filter(i => i.status === '未到货');
+  const inStock = items.filter(i => i.status === '已到货在库');
+  const issued = items.filter(i => i.status === '已发放');
+  const arrived = items.filter(i => i.status === '已发放' || i.status === '已到货在库');
+  const overdue = items.filter(i => isOverdueItem(i, today));
+  const lliPending = notArrived.filter(i => i.critical_item === 'LLI' || i.critical_item === 'Critical');
+  const totalQty = sumQty(items);
+  const arrivedQty = sumQty(arrived);
+  return {
+    items, today, notArrived, inStock, issued, arrived, overdue, lliPending,
+    totalQty, arrivedQty,
+    notArrivedQty: sumQty(notArrived),
+    inStockQty: sumQty(inStock),
+    issuedQty: sumQty(issued),
+    overdueQty: sumQty(overdue),
+    totalWeight: round1(sumWeight(items)),
+    notArrivedWeight: round1(sumWeight(notArrived)),
+    inStockWeight: round1(sumWeight(inStock)),
+    issuedWeight: round1(sumWeight(issued)),
+    rate: totalQty ? Math.round(arrivedQty / totalQty * 1000) / 10 : 0
+  };
+}
+function renderStatusPie(elId, data, unit) {
+  const el = document.getElementById(elId);
+  if (!el || typeof echarts === 'undefined') return;
+  const chart = echarts.init(el);
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ' + unit + ' ({d}%)' },
+    legend: { bottom: 0, textStyle: { fontSize: 11 } },
+    series: [{
+      type: 'pie',
+      radius: ['42%', '68%'],
+      center: ['50%', '44%'],
+      label: { fontSize: 11 },
+      data: [
+        { name: '未到货', value: data[0], itemStyle: { color: '#d9363e' } },
+        { name: '已到货在库', value: data[1], itemStyle: { color: '#e8a317' } },
+        { name: '已发放', value: data[2], itemStyle: { color: '#2e9e5b' } }
+      ]
+    }]
+  });
+  new ResizeObserver(() => chart.resize()).observe(el);
+}
+
+/* ===== 弹窗控制 ===== */
+function openModal(title, bodyHtml, footerHtml, large) {
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = bodyHtml;
+  $('#modalFooter').innerHTML = footerHtml || '<button class="btn btn-default" onclick="closeModal()">关闭</button>';
+  $('#modalBox').className = 'modal' + (large ? ' large' : '');
+  $('#modalOverlay').classList.add('show');
+}
+function closeModal() {
+  $('#modalOverlay').classList.remove('show');
+}
+$('#modalClose').addEventListener('click', closeModal);
+$('#modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ===== 导航切换 ===== */
+function switchView(viewName) {
+  state.currentView = viewName;
+  $$('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.view === viewName);
+  });
+  renderView(viewName);
+  $('#contentArea').scrollTop = 0;
+}
+$$('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    switchView(this.dataset.view);
+  });
+});
+
+/* ===== 视图渲染入口 ===== */
+function renderView(viewName) {
+  const renderers = {
+    overview: renderOverview,
+    progress: renderProgress,
+    safety: renderSafety,
+    quality: renderQuality,
+    labor: renderLabor,
+    equipment: renderEquipment,
+    material: renderMaterial,
+    hazard: renderHazard,
+    log: renderLog,
+    todo: renderTodo
+  };
+  (renderers[viewName] || renderOverview)();
+}
+
+/* ===== 1. 项目总览仪表盘 ===== */
+function renderOverview() {
+  const d = mockData.overview;
+  const eq = equipmentKpis();
+  const pd = window.PROGRESS_DATA;
+  const kpi = pd && pd.kpis ? pd.kpis : null;
+  const actualPct = kpi ? (kpi.cumActual * 100).toFixed(2) : d.totalProgress;
+  const planPct = kpi ? (kpi.cumPlan * 100).toFixed(2) : '—';
+  const varPct = kpi ? ((kpi.cumVar * 100).toFixed(2) + '%') : '';
+  const milestones = (typeof progressOverviewMilestones === 'function' && pd) ? progressOverviewMilestones() : d.milestones;
+  const html = `
+    <div class="scroll-notice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="notice-text">设备到货：计划日已过仍未到货 ${eq.overdue.length} 项（${eq.overdueQty} 台）；LLI/Critical 未到货 ${eq.lliPending.length} 项。数据截至 ${getEquipmentMeta().snapshot_date || '—'}。</div>
+      <button class="btn btn-sm btn-danger" onclick="switchView('material')">查看台账</button>
+    </div>
+
+    <div class="page-header">
+      <div class="page-title">项目总览仪表盘 <span class="subtitle">实时掌握工地全局状态</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>刷新数据</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出报表</button>
+      </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="stat-grid">
+      <div class="stat-card primary">
+        <div class="stat-label">在建工序数</div>
+        <div class="stat-value">${d.stats.activeProcesses}<span class="unit">项</span></div>
+        <div class="stat-trend up">较昨日 +2</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-label">待整改隐患</div>
+        <div class="stat-value">${d.stats.pendingHazards}<span class="unit">项</span></div>
+        <div class="stat-trend up">重大隐患 3 项</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">今日在场劳务</div>
+        <div class="stat-value">${d.stats.todayWorkers}<span class="unit">人</span></div>
+        <div class="stat-trend down">出勤率 93.7%</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-label">设备在线数量</div>
+        <div class="stat-value">${d.stats.onlineEquipment}<span class="unit">台</span></div>
+        <div class="stat-trend">运行中 8 / 故障 1</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">设备未到货</div>
+        <div class="stat-value">${eq.notArrivedQty}<span class="unit">台</span></div>
+        <div class="stat-trend">${eq.notArrived.length} 条记录</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-label">计划日已过未到</div>
+        <div class="stat-value">${eq.overdue.length}<span class="unit">项</span></div>
+        <div class="stat-trend up">${eq.overdueQty} 台</div>
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+    </div>
+
+    <!-- 进度总览 + 风险等级 -->
+    <div class="grid-2-1" style="margin-bottom:14px;">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">项目整体进度</div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:12px;">
+            <span style="color:var(--text-secondary);">CC6 累计实际 / 计划</span>
+            <span style="font-size:20px;font-weight:700;color:var(--primary);">${actualPct}%</span>
+            <span style="font-size:12px;color:var(--text-muted);">计划 ${planPct}%　偏差 ${varPct}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="chartProgress" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">项目风险等级</div></div>
+        <div class="card-body" style="text-align:center;padding:20px 16px;">
+          <div style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;">
+            <div style="width:90px;height:90px;border-radius:50%;background:var(--warning-bg);border:4px solid var(--warning);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:22px;font-weight:700;color:var(--warning);">中风险</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">
+              进度 SPI ${kpi && kpi.spi ? kpi.spi.toFixed(2) : '—'}（滞后）<br>
+              累计偏差 ${varPct || '—'}<br>
+              设备超期未到 ${eq.overdue.length} 项
+            </div>
+            <button class="btn btn-sm btn-warning" onclick="switchView('todo')">查看风险详情</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 里程碑 + 隐患分布 -->
+    <div class="grid-1-2" style="margin-bottom:14px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">关键里程碑节点</div></div>
+        <div class="card-body">
+          <div class="milestone-list">
+            ${milestones.map(m => `
+              <div class="milestone-node">
+                <div class="milestone-dot ${m.status}">${m.status === 'done' ? '✓' : m.status === 'doing' ? '●' : m.status === 'delay' ? '!' : ''}</div>
+                <div class="milestone-info">
+                  <div class="milestone-name">${m.name}${m.status === 'doing' ? ' <span class="tag tag-primary" style="margin-left:4px;">进行中</span>' : ''}</div>
+                  <div class="milestone-date">${m.date}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">隐患类型分布 & 劳务人数趋势</div>
+          <div style="display:flex;gap:16px;font-size:11px;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--primary);border-radius:2px;"></span>计划进度</span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--success);border-radius:2px;"></span>实际进度</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div id="chartHazard" class="chart-container small"></div>
+            <div id="chartLabor" class="chart-container small"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快捷入口 -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">快捷功能入口</div></div>
+      <div class="card-body">
+        <div class="quick-grid">
+          <div class="quick-item" onclick="switchView('progress')">
+            <div class="quick-icon" style="background:var(--primary-bg);color:var(--primary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+            <div class="quick-name">进度管理</div>
+            <div class="quick-count">${actualPct}% / 计划 ${planPct}%</div>
+          </div>
+          <div class="quick-item" onclick="switchView('safety')">
+            <div class="quick-icon" style="background:var(--danger-bg);color:var(--danger);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="quick-name">安全隐患</div>
+            <div class="quick-count">5项待整改</div>
+          </div>
+          <div class="quick-item" onclick="switchView('quality')">
+            <div class="quick-icon" style="background:var(--success-bg);color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div>
+            <div class="quick-name">质量管理</div>
+            <div class="quick-count">3项待验收</div>
+          </div>
+          <div class="quick-item" onclick="switchView('labor')">
+            <div class="quick-icon" style="background:#eef1f5;color:var(--info);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="quick-name">劳务人员</div>
+            <div class="quick-count">386人在场</div>
+          </div>
+          <div class="quick-item" onclick="switchView('equipment')">
+            <div class="quick-icon" style="background:var(--warning-bg);color:var(--warning);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+            <div class="quick-name">机械设备</div>
+            <div class="quick-count">12台在线</div>
+          </div>
+          <div class="quick-item" onclick="switchView('material')">
+            <div class="quick-icon" style="background:var(--primary-bg);color:var(--primary);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="quick-name">设备到货</div>
+            <div class="quick-count">${eq.notArrivedQty}台未到货</div>
+          </div>
+          <div class="quick-item" onclick="switchView('hazard')">
+            <div class="quick-icon" style="background:var(--danger-bg);color:var(--danger);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div class="quick-name">危大工程</div>
+            <div class="quick-count">4项施工中</div>
+          </div>
+          <div class="quick-item" onclick="switchView('log')">
+            <div class="quick-icon" style="background:#eef1f5;color:var(--info);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="quick-name">施工日志</div>
+            <div class="quick-count">今日已记录</div>
+          </div>
+          <div class="quick-item" onclick="switchView('todo')">
+            <div class="quick-icon" style="background:var(--warning-bg);color:var(--warning);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <div class="quick-name">待办&预警</div>
+            <div class="quick-count">8项待处理</div>
+          </div>
+          <div class="quick-item" onclick="alert('功能开发中')">
+            <div class="quick-icon" style="background:var(--success-bg);color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="quick-name">视频监控</div>
+            <div class="quick-count">6路在线</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+  // 初始化图表
+  setTimeout(() => {
+    initOverviewCharts();
+  }, 50);
+}
+
+function initOverviewCharts() {
+  const d = mockData.overview;
+  const colors = { primary: '#1a56a0', success: '#2e9e5b', warning: '#e8a317', danger: '#d9363e' };
+  const trend = (typeof progressOverviewTrend === 'function' && window.PROGRESS_DATA) ? progressOverviewTrend() : d.progressTrend;
+  const yMax = Math.max(40, ...trend.map(i => Math.max(i.plan || 0, i.actual || 0))) + 10;
+
+  // 进度趋势图
+  const chartProgress = echarts.init(document.getElementById('chartProgress'));
+  chartProgress.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { show: false },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: trend.map(i => i.month), axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#5c6c7c' } },
+    yAxis: { type: 'value', max: yMax, axisLabel: { color: '#5c6c7c', formatter: '{value}%' }, splitLine: { lineStyle: { color: '#edf0f3' } } },
+    series: [
+      { name: '计划进度', type: 'line', data: trend.map(i => i.plan), smooth: true, lineStyle: { color: colors.primary, width: 2, type: 'dashed' }, itemStyle: { color: colors.primary }, symbol: 'circle', symbolSize: 6 },
+      { name: '实际进度', type: 'line', data: trend.map(i => i.actual), smooth: true, lineStyle: { color: colors.success, width: 2.5 }, itemStyle: { color: colors.success }, symbol: 'circle', symbolSize: 7, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(46,158,91,0.2)' }, { offset: 1, color: 'rgba(46,158,91,0)' }]) } }
+    ]
+  });
+  new ResizeObserver(() => chartProgress.resize()).observe(document.getElementById('chartProgress'));
+  state.charts.progress = chartProgress;
+
+  // 隐患分布饼图
+  const chartHazard = echarts.init(document.getElementById('chartHazard'));
+  chartHazard.setOption({
+    title: { text: '隐患类型分布', left: 'center', top: 5, textStyle: { fontSize: 12, color: '#5c6c7c', fontWeight: 'normal' } },
+    tooltip: { trigger: 'item', formatter: '{b}: {c}项 ({d}%)' },
+    series: [{
+      type: 'pie', radius: ['40%', '65%'], center: ['50%', '55%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 2, borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, position: 'inside', formatter: '{d}%', fontSize: 10, color: '#fff' },
+      labelLine: { show: false },
+      data: d.hazardDistribution.map((item, i) => ({ ...item, itemStyle: { color: [colors.danger, colors.warning, colors.primary, '#5c6c7c', '#8b5cf6', '#94a3b8'][i] } }))
+    }]
+  });
+  new ResizeObserver(() => chartHazard.resize()).observe(document.getElementById('chartHazard'));
+  state.charts.hazard = chartHazard;
+
+  // 劳务人数趋势
+  const chartLabor = echarts.init(document.getElementById('chartLabor'));
+  chartLabor.setOption({
+    title: { text: '在场劳务人数趋势', left: 'center', top: 5, textStyle: { fontSize: 12, color: '#5c6c7c', fontWeight: 'normal' } },
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '5%', bottom: '8%', top: '25%', containLabel: true },
+    xAxis: { type: 'category', data: d.laborTrend.map(i => i.month), axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#5c6c7c', fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { color: '#5c6c7c', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf0f3' } } },
+    series: [{ type: 'bar', data: d.laborTrend.map(i => i.value), barWidth: '50%', itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.primary }, { offset: 1, color: '#2d7dd2' }]), borderRadius: [3, 3, 0, 0] } }]
+  });
+  new ResizeObserver(() => chartLabor.resize()).observe(document.getElementById('chartLabor'));
+  state.charts.labor = chartLabor;
+}
+
+/* 进度管理见 data/progress-ui.js */
+
+/* ===== 3. 安全隐患管理 ===== */
+function renderSafety() {
+  const f = state.filters.safety;
+  let list = mockData.safety.filter(item => {
+    if (f.status !== 'all' && item.status !== f.status) return false;
+    if (f.level !== 'all' && item.level !== f.level) return false;
+    return true;
+  });
+  const pendingCount = mockData.safety.filter(i => i.status === 'pending').length;
+  const majorCount = mockData.safety.filter(i => i.level === 'major').length;
+  const closedCount = mockData.safety.filter(i => i.status === 'closed').length;
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">安全隐患管理 <span class="subtitle">隐患排查、整改跟踪与闭环管理</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出隐患台账</button>
+        <button class="btn btn-danger btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>上报隐患</button>
+      </div>
+    </div>
+
+    ${pendingCount > 0 ? `<div class="scroll-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div class="notice-text">当前有 ${pendingCount} 项隐患待整改，其中 ${majorCount} 项为重大隐患，请及时处理！</div></div>` : ''}
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card danger"><div class="stat-label">待整改隐患</div><div class="stat-value">${pendingCount}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+      <div class="stat-card warning"><div class="stat-label">整改中</div><div class="stat-value">${mockData.safety.filter(i=>i.status==='rectifying').length}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      <div class="stat-card success"><div class="stat-label">已闭环</div><div class="stat-value">${closedCount}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">重大隐患</div><div class="stat-value">${majorCount}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">隐患清单</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--text-secondary);">状态：</span>
+          <select class="form-control" style="width:100px;height:28px;" onchange="filterSafety('status',this.value)">
+            <option value="all" ${f.status==='all'?'selected':''}>全部</option>
+            <option value="pending" ${f.status==='pending'?'selected':''}>待整改</option>
+            <option value="rectifying" ${f.status==='rectifying'?'selected':''}>整改中</option>
+            <option value="closed" ${f.status==='closed'?'selected':''}>已闭环</option>
+          </select>
+          <span style="font-size:12px;color:var(--text-secondary);">等级：</span>
+          <select class="form-control" style="width:100px;height:28px;" onchange="filterSafety('level',this.value)">
+            <option value="all" ${f.level==='all'?'selected':''}>全部</option>
+            <option value="major" ${f.level==='major'?'selected':''}>重大</option>
+            <option value="general" ${f.level==='general'?'selected':''}>一般</option>
+          </select>
+          <button class="btn btn-sm btn-default" onclick="filterSafety('status','pending');filterSafety('level','all')">只看未闭环</button>
+        </div>
+      </div>
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:70px;">编号</th>
+              <th style="width:90px;">类型</th>
+              <th>隐患部位</th>
+              <th style="width:70px;">等级</th>
+              <th style="width:80px;">发现人</th>
+              <th style="width:130px;">发现时间</th>
+              <th style="width:80px;">整改人</th>
+              <th style="width:130px;">整改期限</th>
+              <th style="width:70px;">状态</th>
+              <th style="width:80px;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(item => `
+              <tr style="${item.level==='major' && item.status!=='closed' ? 'background:#fff8f8;' : ''}">
+                <td style="font-family:monospace;">${item.id}</td>
+                <td><span class="tag tag-info">${item.type}</span></td>
+                <td style="font-weight:500;">${item.location}${item.level==='major' ? ' <span style="color:var(--danger);font-size:11px;">[重大]</span>' : ''}</td>
+                <td>${statusTag(item.level)}</td>
+                <td>${item.finder}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${item.findTime}</td>
+                <td>${item.responsible}</td>
+                <td style="font-size:11px;color:${item.status==='pending' ? 'var(--danger)' : 'var(--text-secondary)'};">${item.deadline}</td>
+                <td>${statusTag(item.status)}</td>
+                <td class="col-action"><button class="btn-link" onclick="showSafetyDetail('${item.id}')">详情</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+}
+function filterSafety(type, value) {
+  state.filters.safety[type] = value;
+  renderSafety();
+}
+function showSafetyDetail(id) {
+  const item = mockData.safety.find(i => i.id === id);
+  if (!item) return;
+  const isMajor = item.level === 'major';
+  const body = `
+    ${isMajor && item.status !== 'closed' ? `<div style="background:var(--danger-bg);border:1px solid var(--danger);border-radius:4px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" style="width:20px;height:20px;flex-shrink:0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span style="color:var(--danger);font-weight:600;font-size:13px;">重大隐患醒目提醒：请立即采取措施，确保整改到位！</span>
+    </div>` : ''}
+    <div class="detail-list" style="margin-bottom:16px;">
+      <div class="detail-item"><span class="detail-label">隐患编号：</span><span class="detail-value">${item.id}</span></div>
+      <div class="detail-item"><span class="detail-label">隐患类型：</span><span class="detail-value">${item.type}</span></div>
+      <div class="detail-item"><span class="detail-label">隐患等级：</span><span class="detail-value">${statusTag(item.level)}</span></div>
+      <div class="detail-item"><span class="detail-label">当前状态：</span><span class="detail-value">${statusTag(item.status)}</span></div>
+      <div class="detail-item"><span class="detail-label">发现人：</span><span class="detail-value">${item.finder}</span></div>
+      <div class="detail-item"><span class="detail-label">发现时间：</span><span class="detail-value">${item.findTime}</span></div>
+      <div class="detail-item"><span class="detail-label">整改责任人：</span><span class="detail-value">${item.responsible}</span></div>
+      <div class="detail-item"><span class="detail-label">整改期限：</span><span class="detail-value" style="color:var(--danger);">${item.deadline}</span></div>
+    </div>
+    <div class="form-group"><label class="form-label">隐患部位</label><div style="padding:8px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;">${item.location}</div></div>
+    <div class="form-group"><label class="form-label">隐患描述</label><div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${item.desc}</div></div>
+    <div class="form-group"><label class="form-label">现场模拟照片（${item.photos}张）</label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        ${Array(item.photos).fill(0).map((_,i) => `<div class="img-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>现场照片${i+1}</div>`).join('')}
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">整改销号流程</label>
+      <div style="display:flex;align-items:center;gap:0;font-size:11px;">
+        <div style="padding:6px 12px;background:var(--success-bg);color:var(--success);border-radius:3px 0 0 3px;font-weight:500;">发现上报</div>
+        <div style="width:20px;height:2px;background:${item.status!=='pending'?'var(--success)':'var(--border)'};"></div>
+        <div style="padding:6px 12px;background:${item.status!=='pending'?'var(--warning-bg)':'var(--bg-page)'};color:${item.status!=='pending'?'var(--warning)':'var(--text-muted)'};font-weight:500;">整改中</div>
+        <div style="width:20px;height:2px;background:${item.status==='closed'?'var(--success)':'var(--border)'};"></div>
+        <div style="padding:6px 12px;background:${item.status==='closed'?'var(--success-bg)':'var(--bg-page)'};color:${item.status==='closed'?'var(--success)':'var(--text-muted)'};border-radius:0 3px 3px 0;font-weight:500;">验收闭环</div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">更新状态</label>
+      <select class="form-control" id="editSafetyStatus">
+        <option value="pending" ${item.status==='pending'?'selected':''}>待整改</option>
+        <option value="rectifying" ${item.status==='rectifying'?'selected':''}>整改中</option>
+        <option value="closed" ${item.status==='closed'?'selected':''}>已闭环</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">整改措施/验收意见</label><textarea class="form-control" placeholder="请输入整改措施或验收意见..."></textarea></div>
+  `;
+  const footer = `<button class="btn btn-default" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSafety('${item.id}')">保存修改</button>`;
+  openModal('隐患详情 - ' + item.location, body, footer, true);
+}
+function saveSafety(id) {
+  const status = $('#editSafetyStatus').value;
+  const item = mockData.safety.find(i => i.id === id);
+  if (item) item.status = status;
+  updateBadges();
+  closeModal();
+  renderSafety();
+}
+
+/* ===== 4. 质量管理模块 ===== */
+function renderQuality() {
+  const d = mockData.quality;
+  const pendingCount = d.pendingAcceptance.length;
+  const issueCount = d.issues.filter(i => i.status !== '已闭环').length;
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">质量管理 <span class="subtitle">质量巡检、工序验收与问题台账</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出质量报告</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>质量巡检</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card success"><div class="stat-label">本月验收合格率</div><div class="stat-value">96.8<span class="unit">%</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg></div></div>
+      <div class="stat-card warning"><div class="stat-label">待验收工序</div><div class="stat-value">${pendingCount}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">未闭环问题</div><div class="stat-value">${issueCount}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+      <div class="stat-card info"><div class="stat-label">本月巡检次数</div><div class="stat-value">28<span class="unit">次</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">质量巡检记录</div><button class="btn btn-sm btn-link">查看全部</button></div>
+        <div class="card-body no-padding">
+          <table class="data-table">
+            <thead><tr><th>编号</th><th>类型</th><th>部位</th><th>检查人</th><th>时间</th><th>结果</th><th>问题</th></tr></thead>
+            <tbody>
+              ${d.inspections.slice(0,6).map(item => `
+                <tr>
+                  <td style="font-family:monospace;font-size:11px;">${item.id}</td>
+                  <td><span class="tag tag-info">${item.type}</span></td>
+                  <td style="font-size:12px;">${item.location}</td>
+                  <td>${item.inspector}</td>
+                  <td style="font-size:11px;color:var(--text-secondary);">${item.time.slice(5)}</td>
+                  <td>${statusTag(item.status)}</td>
+                  <td>${item.issues > 0 ? '<span style="color:var(--danger);">'+item.issues+'项</span>' : '<span style="color:var(--success);">无</span>'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">不合格项统计趋势</div></div>
+        <div class="card-body"><div id="chartQuality" class="chart-container small"></div></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">质量问题台账</div><span class="tag tag-danger">${issueCount}项未闭环</span></div>
+        <div class="card-body no-padding">
+          <table class="data-table">
+            <thead><tr><th>编号</th><th>问题描述</th><th>等级</th><th>责任人</th><th>期限</th><th>状态</th></tr></thead>
+            <tbody>
+              ${d.issues.map(item => `
+                <tr>
+                  <td style="font-family:monospace;font-size:11px;">${item.id}</td>
+                  <td style="font-size:12px;">${item.title}</td>
+                  <td>${item.level === '严重' ? '<span class="tag tag-danger">严重</span>' : '<span class="tag tag-warning">一般</span>'}</td>
+                  <td>${item.responsible}</td>
+                  <td style="font-size:11px;color:var(--text-secondary);">${item.deadline}</td>
+                  <td>${statusTag(item.status)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">验收待办清单</div><span class="tag tag-warning">${pendingCount}项待验收</span></div>
+        <div class="card-body no-padding">
+          <table class="data-table">
+            <thead><tr><th>编号</th><th>工序名称</th><th>申请人</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              ${d.pendingAcceptance.map(item => `
+                <tr>
+                  <td style="font-family:monospace;font-size:11px;">${item.id}</td>
+                  <td style="font-size:12px;font-weight:500;">${item.process}</td>
+                  <td>${item.applicant}</td>
+                  <td style="font-size:11px;color:var(--text-secondary);">${item.applyTime.slice(5)}</td>
+                  <td>${statusTag(item.status)}</td>
+                  <td class="col-action"><button class="btn-link" onclick="alert('开始验收：${item.process}')">验收</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+  setTimeout(() => {
+    const chart = echarts.init(document.getElementById('chartQuality'));
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: '3%', right: '5%', bottom: '3%', top: '10%', containLabel: true },
+      xAxis: { type: 'category', data: d.unqualifiedStats.map(i => i.month), axisLine: { lineStyle: { color: '#e2e8f0' } }, axisLabel: { color: '#5c6c7c' } },
+      yAxis: { type: 'value', axisLabel: { color: '#5c6c7c' }, splitLine: { lineStyle: { color: '#edf0f3' } } },
+      series: [{ type: 'bar', data: d.unqualifiedStats.map(i => i.count), barWidth: '45%', itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#d9363e'},{offset:1,color:'#f08080'}]), borderRadius: [3,3,0,0] }, label: { show: true, position: 'top', fontSize: 10, color: '#5c6c7c' } }]
+    });
+    new ResizeObserver(() => chart.resize()).observe(document.getElementById('chartQuality'));
+  }, 50);
+}
+
+/* ===== 5. 劳务人员实名制 ===== */
+function renderLabor() {
+  const d = mockData.labor;
+  const expiredCount = d.specialWorkers.filter(w => w.status === 'expired').length;
+  const warningCount = d.specialWorkers.filter(w => w.status === 'warning').length;
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">劳务人员实名制 <span class="subtitle">在场人员统计、班组管理与特种作业人员台账</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出花名册</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>人员进场登记</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card primary"><div class="stat-label">总人数</div><div class="stat-value">${d.summary.total}<span class="unit">人</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div>
+      <div class="stat-card success"><div class="stat-label">今日出勤</div><div class="stat-value">${d.summary.present}<span class="unit">人</span></div><div class="stat-trend down">出勤率 ${d.summary.attendanceRate}%</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+      <div class="stat-card warning"><div class="stat-label">今日缺勤</div><div class="stat-value">${d.summary.absent}<span class="unit">人</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">证件预警</div><div class="stat-value">${expiredCount + warningCount}<span class="unit">人</span></div><div class="stat-trend up">过期${expiredCount} / 即将到期${warningCount}</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">班组分类统计</div></div>
+        <div class="card-body no-padding">
+          <table class="data-table">
+            <thead><tr><th>班组名称</th><th>工种</th><th>班组长</th><th>总人数</th><th>今日出勤</th><th>出勤率</th></tr></thead>
+            <tbody>
+              ${d.teams.map(t => `
+                <tr>
+                  <td style="font-weight:500;">${t.name}</td>
+                  <td><span class="tag tag-info">${t.type}</span></td>
+                  <td>${t.leader}</td>
+                  <td>${t.total}</td>
+                  <td style="color:${t.present/t.total >= 0.9 ? 'var(--success)' : 'var(--warning)'};">${t.present}</td>
+                  <td>${progressBar(Math.round(t.present/t.total*100), t.present/t.total >= 0.9 ? 'success' : 'warning')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">今日未出勤人员</div><span class="tag tag-warning">${d.absentToday.length}人</span></div>
+        <div class="card-body no-padding">
+          <table class="data-table">
+            <thead><tr><th>姓名</th><th>所属班组</th><th>缺勤原因</th><th>天数</th></tr></thead>
+            <tbody>
+              ${d.absentToday.map(p => `
+                <tr>
+                  <td style="font-weight:500;">${p.name}</td>
+                  <td>${p.team}</td>
+                  <td>${p.reason === '未请假' ? '<span style="color:var(--danger);">未请假</span>' : p.reason}</td>
+                  <td>${p.days}天</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid var(--border-light);">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px;">各班组出勤情况</div>
+          <div id="chartLaborAttend" class="chart-container" style="min-height:180px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">特种作业人员台账</div>
+        <div style="display:flex;gap:8px;">
+          <span class="tag tag-danger">已过期 ${expiredCount} 人</span>
+          <span class="tag tag-warning">即将到期 ${warningCount} 人</span>
+        </div>
+      </div>
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead><tr><th>姓名</th><th>作业类别</th><th>证书编号</th><th>有效期至</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            ${d.specialWorkers.map(w => `
+              <tr style="${w.status==='expired' ? 'background:#fff8f8;' : w.status==='warning' ? 'background:#fffdf5;' : ''}">
+                <td style="font-weight:500;">${w.name}</td>
+                <td style="font-size:12px;">${w.type}</td>
+                <td style="font-family:monospace;font-size:11px;color:var(--text-secondary);">${w.certNo}</td>
+                <td style="color:${w.status==='expired'?'var(--danger)':w.status==='warning'?'var(--warning)':'var(--text-secondary)'};">${w.expireDate}</td>
+                <td>${w.status==='valid' ? '<span class="tag tag-success">有效</span>' : w.status==='warning' ? '<span class="tag tag-warning">即将到期</span>' : '<span class="tag tag-danger">已过期</span>'}</td>
+                <td class="col-action"><button class="btn-link" onclick="alert('查看 ${w.name} 的证书详情')">查看</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+  setTimeout(() => {
+    const chart = echarts.init(document.getElementById('chartLaborAttend'));
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['总人数', '出勤人数'], bottom: 0, textStyle: { fontSize: 11 } },
+      grid: { left: '3%', right: '5%', bottom: '18%', top: '5%', containLabel: true },
+      xAxis: { type: 'category', data: d.teams.map(t => t.name.slice(0,4)), axisLabel: { color: '#5c6c7c', fontSize: 10, rotate: 20 }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
+      yAxis: { type: 'value', axisLabel: { color: '#5c6c7c', fontSize: 10 }, splitLine: { lineStyle: { color: '#edf0f3' } } },
+      series: [
+        { name: '总人数', type: 'bar', data: d.teams.map(t => t.total), barWidth: '30%', itemStyle: { color: '#1a56a0', borderRadius: [2,2,0,0] } },
+        { name: '出勤人数', type: 'bar', data: d.teams.map(t => t.present), barWidth: '30%', itemStyle: { color: '#2e9e5b', borderRadius: [2,2,0,0] } }
+      ]
+    });
+    new ResizeObserver(() => chart.resize()).observe(document.getElementById('chartLaborAttend'));
+  }, 50);
+}
+
+/* ===== 6. 机械设备管理 ===== */
+function renderEquipment() {
+  const f = state.filters.equipment;
+  let list = mockData.equipment.filter(item => {
+    if (f.status !== 'all' && item.status !== f.status) return false;
+    if (f.type !== 'all' && item.type !== f.type) return false;
+    return true;
+  });
+  const runningCount = mockData.equipment.filter(e => e.status === 'running').length;
+  const faultCount = mockData.equipment.filter(e => e.status === 'fault').length;
+  const maintenanceCount = mockData.equipment.filter(e => e.status === 'maintenance').length;
+  const specialEquip = mockData.equipment.filter(e => e.inspectExpire && e.inspectExpire !== '—');
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">机械设备管理 <span class="subtitle">设备台账、运行状态与维保提醒</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出设备台账</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>设备登记</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card success"><div class="stat-label">运行中</div><div class="stat-value">${runningCount}<span class="unit">台</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      <div class="stat-card info"><div class="stat-label">闲置/备用</div><div class="stat-value">${mockData.equipment.filter(e=>e.status==='idle'||e.status==='standby').length}<span class="unit">台</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div></div>
+      <div class="stat-card warning"><div class="stat-label">保养中</div><div class="stat-value">${maintenanceCount}<span class="unit">台</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">故障</div><div class="stat-value">${faultCount}<span class="unit">台</span></div><div class="stat-trend up">钢筋弯曲机待修</div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">设备台账</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--text-secondary);">类型：</span>
+          <select class="form-control" style="width:110px;height:28px;" onchange="filterEquipment('type',this.value)">
+            <option value="all" ${f.type==='all'?'selected':''}>全部类型</option>
+            <option value="塔吊" ${f.type==='塔吊'?'selected':''}>塔吊</option>
+            <option value="施工电梯" ${f.type==='施工电梯'?'selected':''}>施工电梯</option>
+            <option value="挖掘机" ${f.type==='挖掘机'?'selected':''}>挖掘机</option>
+            <option value="钢筋加工" ${f.type==='钢筋加工'?'selected':''}>钢筋加工</option>
+          </select>
+          <span style="font-size:12px;color:var(--text-secondary);">状态：</span>
+          <select class="form-control" style="width:100px;height:28px;" onchange="filterEquipment('status',this.value)">
+            <option value="all" ${f.status==='all'?'selected':''}>全部状态</option>
+            <option value="running" ${f.status==='running'?'selected':''}>运行中</option>
+            <option value="idle" ${f.status==='idle'?'selected':''}>闲置</option>
+            <option value="maintenance" ${f.status==='maintenance'?'selected':''}>保养中</option>
+            <option value="fault" ${f.status==='fault'?'selected':''}>故障</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr><th>设备名称</th><th>型号</th><th>类型</th><th>位置</th><th>状态</th><th>操作人员</th><th>运行时长</th><th>上次保养</th><th>下次保养</th><th>检测有效期</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            ${list.map(e => `
+              <tr style="${e.status==='fault'?'background:#fff8f8;':''}">
+                <td style="font-weight:500;">${e.name}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${e.model}</td>
+                <td><span class="tag tag-info">${e.type}</span></td>
+                <td style="font-size:12px;">${e.location}</td>
+                <td>${statusTag(e.status)}</td>
+                <td>${e.operator}</td>
+                <td style="font-size:11px;">${e.runHours}h</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${e.lastMaintenance}</td>
+                <td style="font-size:11px;color:var(--warning);">${e.nextMaintenance}</td>
+                <td style="font-size:11px;${e.inspectExpire!=='—'?'color:var(--text-secondary);':'color:var(--text-muted);'}">${e.inspectExpire}</td>
+                <td class="col-action"><button class="btn-link" onclick="showEquipmentDetail('${e.id}')">详情</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">特种设备检测有效期预警</div><span class="tag tag-warning">${specialEquip.length}台特种设备</span></div>
+        <div class="card-body">
+          <div class="timeline">
+            ${specialEquip.map(e => `
+              <div class="timeline-item ${new Date(e.inspectExpire) < new Date('2025-09-01') ? 'danger' : 'warning'}">
+                <div class="timeline-time">检测有效期至 ${e.inspectExpire}</div>
+                <div class="timeline-content"><div class="title">${e.name}（${e.model}）</div><div class="desc">位置：${e.location}，请及时安排第三方检测。</div></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">设备故障记录</div></div>
+        <div class="card-body">
+          <div style="padding:12px;background:var(--danger-bg);border-radius:4px;margin-bottom:10px;">
+            <div style="font-weight:600;color:var(--danger);margin-bottom:4px;">钢筋弯曲机（GW40）- 故障中</div>
+            <div style="font-size:12px;color:var(--text-secondary);">故障时间：2025-08-25 14:30<br>故障描述：电机异响，无法正常弯曲钢筋<br>维修状态：已联系厂家，预计8月27日上门维修</div>
+          </div>
+          <div style="padding:12px;background:var(--bg-page);border-radius:4px;margin-bottom:10px;">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:4px;">1#挖掘机（CAT320D）- 保养中</div>
+            <div style="font-size:12px;color:var(--text-secondary);">保养时间：2025-08-25 开始<br>保养内容：更换机油、滤芯，检查液压系统<br>预计完成：2025-08-27</div>
+          </div>
+          <div style="padding:12px;background:var(--success-bg);border-radius:4px;">
+            <div style="font-weight:600;color:var(--success);margin-bottom:4px;">2#施工升降机 - 已修复</div>
+            <div style="font-size:12px;color:var(--text-secondary);">故障时间：2025-08-20<br>故障描述：限位开关失灵<br>修复时间：2025-08-21，已恢复正常运行</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+}
+function filterEquipment(type, value) {
+  state.filters.equipment[type] = value;
+  renderEquipment();
+}
+function showEquipmentDetail(id) {
+  const e = mockData.equipment.find(i => i.id === id);
+  if (!e) return;
+  const body = `
+    <div class="detail-list" style="margin-bottom:16px;">
+      <div class="detail-item"><span class="detail-label">设备名称：</span><span class="detail-value">${e.name}</span></div>
+      <div class="detail-item"><span class="detail-label">设备型号：</span><span class="detail-value">${e.model}</span></div>
+      <div class="detail-item"><span class="detail-label">设备类型：</span><span class="detail-value">${e.type}</span></div>
+      <div class="detail-item"><span class="detail-label">停放位置：</span><span class="detail-value">${e.location}</span></div>
+      <div class="detail-item"><span class="detail-label">运行状态：</span><span class="detail-value">${statusTag(e.status)}</span></div>
+      <div class="detail-item"><span class="detail-label">操作人员：</span><span class="detail-value">${e.operator}</span></div>
+      <div class="detail-item"><span class="detail-label">累计运行：</span><span class="detail-value">${e.runHours} 小时</span></div>
+      <div class="detail-item"><span class="detail-label">上次保养：</span><span class="detail-value">${e.lastMaintenance}</span></div>
+      <div class="detail-item"><span class="detail-label">下次保养：</span><span class="detail-value" style="color:var(--warning);">${e.nextMaintenance}</span></div>
+      <div class="detail-item"><span class="detail-label">检测有效期：</span><span class="detail-value">${e.inspectExpire}</span></div>
+    </div>
+    <div class="form-group"><label class="form-label">更新设备状态</label>
+      <select class="form-control" id="editEquipStatus">
+        <option value="running" ${e.status==='running'?'selected':''}>运行中</option>
+        <option value="idle" ${e.status==='idle'?'selected':''}>闲置</option>
+        <option value="maintenance" ${e.status==='maintenance'?'selected':''}>保养中</option>
+        <option value="fault" ${e.status==='fault'?'selected':''}>故障</option>
+        <option value="standby" ${e.status==='standby'?'selected':''}>备用</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">维保/故障记录</label><textarea class="form-control" placeholder="请输入维保记录或故障描述..."></textarea></div>
+  `;
+  const footer = `<button class="btn btn-default" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveEquipment('${e.id}')">保存</button>`;
+  openModal('设备详情 - ' + e.name, body, footer);
+}
+function saveEquipment(id) {
+  const status = $('#editEquipStatus').value;
+  const e = mockData.equipment.find(i => i.id === id);
+  if (e) e.status = status;
+  closeModal();
+  renderEquipment();
+}
+
+/* ===== 7. 设备到货管理 ===== */
+function renderMaterial() {
+  const eq = equipmentKpis();
+  const meta = getEquipmentMeta();
+  const f = state.filters.material;
+  const pageSize = 40;
+  let list = eq.items.slice();
+  if (f.status !== 'all') list = list.filter(i => i.status === f.status);
+  if (f.discipline !== 'all') list = list.filter(i => i.discipline === f.discipline);
+  if (f.critical !== 'all') list = list.filter(i => i.critical_item === f.critical);
+  if (f.keyword) {
+    const kw = f.keyword.trim().toLowerCase();
+    list = list.filter(i => (i.tag_no + ' ' + i.name + ' ' + i.vendor + ' ' + i.id).toLowerCase().includes(kw));
+  }
+  list.sort((a, b) => (a.planned_date || '9999').localeCompare(b.planned_date || '9999'));
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  if (f.page > totalPages) f.page = totalPages;
+  if (f.page < 1) f.page = 1;
+  const pageRows = list.slice((f.page - 1) * pageSize, f.page * pageSize);
+  const disciplines = [...new Set(eq.items.map(i => i.discipline).filter(Boolean))].sort();
+  const overdueTop = eq.overdue.slice().sort((a, b) => (a.planned_date || '').localeCompare(b.planned_date || '')).slice(0, 20);
+  const lliNames = eq.lliPending.slice(0, 8).map(i => i.tag_no).join('、');
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">设备到货管理 <span class="subtitle">工艺设备到货 / 在库 / 发放 · 数据截至 ${meta.snapshot_date || '—'} · 数量按台数 quantity</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm" onclick="alert('第一期看板只读，数据在飞书「8-设备状态明细」中维护')">数据来源：飞书底表</button>
+      </div>
+    </div>
+
+    ${eq.overdue.length ? `<div class="scroll-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div class="notice-text">计划日已过仍未到货 ${eq.overdue.length} 项（${eq.overdueQty} 台）。LLI/Critical 未到货 ${eq.lliPending.length} 项${lliNames ? '：' + lliNames : ''}。</div></div>` : ''}
+
+    <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);">
+      <div class="stat-card primary"><div class="stat-label">总台数</div><div class="stat-value">${eq.totalQty}<span class="unit">台</span></div><div class="stat-trend">${eq.items.length} 条记录</div></div>
+      <div class="stat-card danger"><div class="stat-label">未到货</div><div class="stat-value">${eq.notArrivedQty}<span class="unit">台</span></div><div class="stat-trend">${eq.notArrived.length} 条</div></div>
+      <div class="stat-card warning"><div class="stat-label">已到货在库</div><div class="stat-value">${eq.inStockQty}<span class="unit">台</span></div><div class="stat-trend">${eq.inStock.length} 条</div></div>
+      <div class="stat-card success"><div class="stat-label">已发放</div><div class="stat-value">${eq.issuedQty}<span class="unit">台</span></div><div class="stat-trend">${eq.issued.length} 条</div></div>
+      <div class="stat-card info"><div class="stat-label">到货率</div><div class="stat-value">${eq.rate}<span class="unit">%</span></div><div class="stat-trend">已到货 = 在库 + 已发放</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">状态分布（按吨数）</div><span style="font-size:12px;color:var(--text-muted);">合计 ${eq.totalWeight} t</span></div>
+        <div class="card-body">
+          <div id="chartStatusWeight" class="chart-container" style="min-height:260px;"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">状态分布（按台数）</div><span style="font-size:12px;color:var(--text-muted);">合计 ${eq.totalQty} 台</span></div>
+        <div class="card-body">
+          <div id="chartStatusQty" class="chart-container" style="min-height:260px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">设备到货台账</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input class="form-control" style="width:180px;height:28px;" placeholder="位号 / 名称 / 供应商" value="${(f.keyword || '').replace(/"/g, '&quot;')}" onkeydown="if(event.key==='Enter')filterMaterial('keyword',this.value)">
+          <select class="form-control" style="width:120px;height:28px;" onchange="filterMaterial('status',this.value)">
+            <option value="all" ${f.status==='all'?'selected':''}>全部状态</option>
+            <option value="未到货" ${f.status==='未到货'?'selected':''}>未到货</option>
+            <option value="已到货在库" ${f.status==='已到货在库'?'selected':''}>已到货在库</option>
+            <option value="已发放" ${f.status==='已发放'?'selected':''}>已发放</option>
+          </select>
+          <select class="form-control" style="width:160px;height:28px;" onchange="filterMaterial('discipline',this.value)">
+            <option value="all" ${f.discipline==='all'?'selected':''}>全部专业</option>
+            ${disciplines.map(x => `<option value="${x}" ${f.discipline===x?'selected':''}>${x}</option>`).join('')}
+          </select>
+          <select class="form-control" style="width:110px;height:28px;" onchange="filterMaterial('critical',this.value)">
+            <option value="all" ${f.critical==='all'?'selected':''}>全部等级</option>
+            <option value="LLI" ${f.critical==='LLI'?'selected':''}>LLI</option>
+            <option value="Critical" ${f.critical==='Critical'?'selected':''}>Critical</option>
+            <option value="Other" ${f.critical==='Other'?'selected':''}>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body no-padding" style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>位号</th><th>设备名称</th><th>专业</th><th>供应商</th><th>台数</th><th>计划到货</th><th>预测</th><th>实际到货</th><th>发放日</th><th>库位</th><th>状态</th><th>等级</th><th></th></tr></thead>
+          <tbody>
+            ${pageRows.map(m => {
+              const overdue = isOverdueItem(m, eq.today);
+              return `
+              <tr style="${overdue?'background:#fff8f8;':m.status==='已到货在库'?'background:#fffdf5;':''}">
+                <td style="font-family:monospace;font-size:11px;white-space:nowrap;">${m.tag_no}</td>
+                <td style="font-weight:500;max-width:280px;" title="${(m.name || '').replace(/"/g,'&quot;')}">${displayEquipName(m.name)}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${m.discipline}</td>
+                <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(m.vendor || '').replace(/"/g,'&quot;')}">${m.vendor || '—'}</td>
+                <td>${m.quantity}</td>
+                <td style="font-size:11px;${overdue?'color:var(--danger);font-weight:600;':''}">${formatDay(m.planned_date)}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${formatDay(m.forecast_date)}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${formatDay(m.actual_date)}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${formatDay(m.issuing_date)}</td>
+                <td style="font-size:11px;">${m.storage_location || '—'}</td>
+                <td>${statusTag(m.status)}</td>
+                <td>${statusTag(m.critical_item)}</td>
+                <td class="col-action"><button class="btn-link" onclick="showDeliveryDetail('${m.id}')">详情</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-secondary);border-top:1px solid var(--border-light);">
+        <span>筛选后 ${list.length} 条 · 第 ${f.page}/${totalPages} 页</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-default btn-sm" ${f.page<=1?'disabled':''} onclick="filterMaterial('page', ${f.page-1})">上一页</button>
+          <button class="btn btn-default btn-sm" ${f.page>=totalPages?'disabled':''} onclick="filterMaterial('page', ${f.page+1})">下一页</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">逾期未到清单（计划日最早 20 条）</div></div>
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead><tr><th>位号</th><th>名称</th><th>供应商</th><th>计划到货</th><th>预测</th><th>等级</th></tr></thead>
+          <tbody>
+            ${overdueTop.map(i => `
+              <tr>
+                <td style="font-family:monospace;font-size:11px;">${i.tag_no}</td>
+                <td style="font-size:12px;" title="${(i.name || '').replace(/"/g,'&quot;')}">${displayEquipName(i.name)}</td>
+                <td style="font-size:11px;color:var(--text-secondary);">${i.vendor || '—'}</td>
+                <td style="font-size:11px;color:var(--danger);font-weight:600;">${formatDay(i.planned_date)}</td>
+                <td style="font-size:11px;">${formatDay(i.forecast_date)}</td>
+                <td>${statusTag(i.critical_item)}</td>
+              </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px;">暂无逾期</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+  setTimeout(() => {
+    renderStatusPie('chartStatusWeight', [eq.notArrivedWeight, eq.inStockWeight, eq.issuedWeight], 't');
+    renderStatusPie('chartStatusQty', [eq.notArrivedQty, eq.inStockQty, eq.issuedQty], '台');
+  }, 50);
+}
+function filterMaterial(type, value) {
+  if (type === 'page') state.filters.material.page = Number(value) || 1;
+  else {
+    state.filters.material[type] = value;
+    state.filters.material.page = 1;
+  }
+  renderMaterial();
+}
+function showDeliveryDetail(id) {
+  const m = getEquipmentItems().find(i => i.id === id);
+  if (!m) return;
+  const overdue = isOverdueItem(m);
+  openModal('设备详情 ' + m.tag_no, `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px;">
+      <div><div class="form-label">设备编号</div><div>${m.id}</div></div>
+      <div><div class="form-label">位号</div><div>${m.tag_no}</div></div>
+      <div style="grid-column:1/-1;"><div class="form-label">名称</div><div>${m.name}</div></div>
+      <div><div class="form-label">专业</div><div>${m.discipline}</div></div>
+      <div><div class="form-label">类型</div><div>${m.material_type || '—'}</div></div>
+      <div><div class="form-label">供应商</div><div>${m.vendor || '—'}</div></div>
+      <div><div class="form-label">台数 / 重量</div><div>${m.quantity} 台${m.weight_t!=null?' · '+m.weight_t+' t':''}</div></div>
+      <div><div class="form-label">状态</div><div>${statusTag(m.status)}${overdue?' '+statusTag('overdue'):''}</div></div>
+      <div><div class="form-label">等级</div><div>${statusTag(m.critical_item)}</div></div>
+      <div><div class="form-label">计划到货</div><div>${formatDay(m.planned_date)}</div></div>
+      <div><div class="form-label">预测到货</div><div>${formatDay(m.forecast_date)}</div></div>
+      <div><div class="form-label">实际到货</div><div>${formatDay(m.actual_date)}</div></div>
+      <div><div class="form-label">发放日</div><div>${formatDay(m.issuing_date)}</div></div>
+      <div><div class="form-label">库位</div><div>${m.storage_location || '—'}</div></div>
+      <div><div class="form-label">区域 / 单元</div><div>${m.area || '—'} / ${m.unit || '—'}</div></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">只读。改状态请在飞书「8-设备状态明细」中更新，再把新表发给我同步。</div>
+  `, '', true);
+}
+
+/* ===== 8. 危大工程专项管理 ===== */
+function renderHazard() {
+  const d = mockData.hazard;
+  const highRisk = d.filter(h => h.riskLevel === 'high').length;
+  const inConstruction = d.filter(h => h.constructionStatus === '施工中').length;
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">危大工程专项管理 <span class="subtitle">超过一定规模的危险性较大分部分项工程全流程跟踪</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出专项台账</button>
+        <button class="btn btn-danger btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增危大工程</button>
+      </div>
+    </div>
+
+    <div class="scroll-notice" style="background:var(--danger-bg);border-left-color:var(--danger);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="notice-text">高风险工序重点提醒：高大模板支撑体系正在施工中，请严格按专家论证方案执行，加强现场监测！</div>
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card danger"><div class="stat-label">危大工程总数</div><div class="stat-value">${d.length}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">高风险</div><div class="stat-value">${highRisk}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg></div></div>
+      <div class="stat-card primary"><div class="stat-label">施工中</div><div class="stat-value">${inConstruction}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      <div class="stat-card success"><div class="stat-label">已完成销号</div><div class="stat-value">${d.filter(h=>h.acceptanceStatus==='已验收销号'||h.acceptanceStatus==='已验收').length}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">危大工程清单（全流程跟踪）</div></div>
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr><th style="width:140px;">工程名称</th><th>位置</th><th style="width:70px;">风险等级</th><th style="width:70px;">方案审批</th><th style="width:70px;">专家论证</th><th style="width:60px;">交底</th><th style="width:70px;">施工状态</th><th style="width:80px;">验收销号</th><th style="width:70px;">负责人</th><th style="width:70px;">操作</th></tr>
+          </thead>
+          <tbody>
+            ${d.map(h => `
+              <tr style="${h.riskLevel==='high' ? 'background:#fff8f8;' : ''}">
+                <td style="font-weight:500;font-size:12px;">${h.name}${h.riskLevel==='high' ? ' <span style="color:var(--danger);font-size:10px;">[高风险]</span>' : ''}</td>
+                <td style="font-size:12px;">${h.location}</td>
+                <td>${riskLevelTag(h.riskLevel)}</td>
+                <td>${statusTag(h.planStatus)}</td>
+                <td>${statusTag(h.expertReview)}</td>
+                <td>${statusTag(h.交底Status)}</td>
+                <td>${statusTag(h.constructionStatus)}</td>
+                <td>${statusTag(h.acceptanceStatus)}</td>
+                <td>${h.manager}</td>
+                <td class="col-action"><button class="btn-link" onclick="showHazardDetail('${h.id}')">详情</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">高风险工序重点提醒</div></div>
+        <div class="card-body">
+          ${d.filter(h => h.riskLevel === 'high' && h.constructionStatus !== '已完成').map(h => `
+            <div style="padding:12px;background:var(--danger-bg);border-radius:4px;margin-bottom:10px;border-left:3px solid var(--danger);">
+              <div style="font-weight:600;color:var(--danger);margin-bottom:4px;">${h.name}</div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">${h.desc}</div>
+              <div style="margin-top:6px;font-size:11px;color:var(--text-muted);">负责人：${h.manager} | 计划周期：${h.startDate} ~ ${h.endDate}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">危大工程全流程状态</div></div>
+        <div class="card-body">
+          ${d.map(h => `
+            <div style="margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:600;margin-bottom:6px;">${h.name}</div>
+              <div style="display:flex;align-items:center;gap:0;font-size:10px;">
+                <div style="padding:4px 8px;background:${h.planStatus==='已审批'?'var(--success-bg)':'var(--warning-bg)'};color:${h.planStatus==='已审批'?'var(--success)':'var(--warning)'};border-radius:3px 0 0 3px;white-space:nowrap;">方案审批</div>
+                <div style="width:12px;height:2px;background:${h.expertReview!=='待论证'?'var(--success)':'var(--border)'};"></div>
+                <div style="padding:4px 8px;background:${h.expertReview==='已通过'?'var(--success-bg)':h.expertReview==='无需论证'?'#eef1f5':'var(--warning-bg)'};color:${h.expertReview==='已通过'?'var(--success)':h.expertReview==='无需论证'?'var(--info)':'var(--warning)'};white-space:nowrap;">专家论证</div>
+                <div style="width:12px;height:2px;background:${h.交底Status==='已交底'?'var(--success)':'var(--border)'};"></div>
+                <div style="padding:4px 8px;background:${h.交底Status==='已交底'?'var(--success-bg)':'var(--bg-page)'};color:${h.交底Status==='已交底'?'var(--success)':'var(--text-muted)'};white-space:nowrap;">安全交底</div>
+                <div style="width:12px;height:2px;background:${h.constructionStatus==='已完成'?'var(--success)':'var(--border)'};"></div>
+                <div style="padding:4px 8px;background:${h.constructionStatus==='施工中'?'var(--primary-bg)':h.constructionStatus==='已完成'?'var(--success-bg)':'var(--bg-page)'};color:${h.constructionStatus==='施工中'?'var(--primary)':h.constructionStatus==='已完成'?'var(--success)':'var(--text-muted)'};white-space:nowrap;">施工</div>
+                <div style="width:12px;height:2px;background:${h.acceptanceStatus.includes('已')?'var(--success)':'var(--border)'};"></div>
+                <div style="padding:4px 8px;background:${h.acceptanceStatus.includes('已')?'var(--success-bg)':'var(--bg-page)'};color:${h.acceptanceStatus.includes('已')?'var(--success)':'var(--text-muted)'};border-radius:0 3px 3px 0;white-space:nowrap;">验收销号</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+}
+function showHazardDetail(id) {
+  const h = mockData.hazard.find(i => i.id === id);
+  if (!h) return;
+  const body = `
+    <div style="margin-bottom:14px;">${riskLevelTag(h.riskLevel)} <span style="margin-left:8px;font-size:12px;color:var(--text-secondary);">${h.location}</span></div>
+    <div class="detail-list" style="margin-bottom:16px;">
+      <div class="detail-item"><span class="detail-label">工程名称：</span><span class="detail-value">${h.name}</span></div>
+      <div class="detail-item"><span class="detail-label">风险等级：</span><span class="detail-value">${riskLevelTag(h.riskLevel)}</span></div>
+      <div class="detail-item"><span class="detail-label">方案审批：</span><span class="detail-value">${statusTag(h.planStatus)}</span></div>
+      <div class="detail-item"><span class="detail-label">专家论证：</span><span class="detail-value">${statusTag(h.expertReview)}</span></div>
+      <div class="detail-item"><span class="detail-label">安全交底：</span><span class="detail-value">${statusTag(h.交底Status)}</span></div>
+      <div class="detail-item"><span class="detail-label">施工状态：</span><span class="detail-value">${statusTag(h.constructionStatus)}</span></div>
+      <div class="detail-item"><span class="detail-label">验收销号：</span><span class="detail-value">${statusTag(h.acceptanceStatus)}</span></div>
+      <div class="detail-item"><span class="detail-label">项目负责人：</span><span class="detail-value">${h.manager}</span></div>
+      <div class="detail-item"><span class="detail-label">计划开始：</span><span class="detail-value">${h.startDate}</span></div>
+      <div class="detail-item"><span class="detail-label">计划完成：</span><span class="detail-value">${h.endDate}</span></div>
+    </div>
+    <div class="form-group"><label class="form-label">工程概况及风险描述</label><div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${h.desc}</div></div>
+    <div class="form-group"><label class="form-label">更新施工状态</label>
+      <select class="form-control">
+        <option ${h.constructionStatus==='未开始'?'selected':''}>未开始</option>
+        <option ${h.constructionStatus==='施工中'?'selected':''}>施工中</option>
+        <option ${h.constructionStatus==='已完成'?'selected':''}>已完成</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">验收销号状态</label>
+      <select class="form-control">
+        <option>待验收</option>
+        <option>分段验收</option>
+        <option>持续监控</option>
+        <option>已验收销号</option>
+      </select>
+    </div>
+  `;
+  const footer = `<button class="btn btn-default" onclick="closeModal()">关闭</button><button class="btn btn-primary" onclick="closeModal();alert('保存成功')">保存</button>`;
+  openModal('危大工程详情 - ' + h.name, body, footer, true);
+}
+
+/* ===== 9. 施工日志模块 ===== */
+function renderLog() {
+  const d = mockData.logs;
+  const html = `
+    <div class="page-header">
+      <div class="page-title">施工日志 <span class="subtitle">每日施工内容、天气、人员机械及问题记录</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出日志</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>写今日日志</button>
+      </div>
+    </div>
+
+    <div class="grid-1-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">日志列表</div><span class="tag tag-primary">共 ${d.length} 篇</span></div>
+        <div class="card-body no-padding">
+          <div style="max-height:600px;overflow-y:auto;">
+            ${d.map((log, idx) => `
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);cursor:pointer;${idx===0?'background:var(--primary-bg);border-left:3px solid var(--primary);':''}" onclick="showLogDetail('${log.id}')">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                  <span style="font-weight:600;font-size:13px;">${log.date}</span>
+                  <span style="font-size:11px;color:var(--text-muted);">${log.weather}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${log.content}</div>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">记录人：${log.writer}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">${d[0].date} 施工日志详情</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="tag tag-info">${d[0].weather}</span>
+            <span style="font-size:12px;color:var(--text-muted);">记录人：${d[0].writer}</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="form-group"><label class="form-label">今日施工内容</label>
+            <div style="padding:12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.8;">${d[0].content}</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">今日问题</label>
+              <div style="padding:10px 12px;background:${d[0].issues?'var(--warning-bg)':'var(--bg-page)'};border-radius:4px;font-size:12px;line-height:1.6;color:${d[0].issues?'var(--warning)':'var(--text-secondary)'};">${d[0].issues || '无'}</div>
+            </div>
+            <div class="form-group"><label class="form-label">材料进场</label>
+              <div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${d[0].materials}</div>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">机械设备情况</label>
+            <div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${d[0].equipment}</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="btn btn-default btn-sm" onclick="showLogDetail('${d[0].id}')">查看完整</button>
+            <button class="btn btn-primary btn-sm">编辑日志</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+}
+function showLogDetail(id) {
+  const log = mockData.logs.find(l => l.id === id);
+  if (!log) return;
+  const body = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border-light);">
+      <div><span style="font-size:15px;font-weight:700;">${log.date} 施工日志</span></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="tag tag-info">${log.weather}</span>
+        <span style="font-size:12px;color:var(--text-muted);">记录人：${log.writer}</span>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">今日施工内容</label><div style="padding:12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.8;">${log.content}</div></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">今日问题</label><div style="padding:10px 12px;background:${log.issues?'var(--warning-bg)':'var(--bg-page)'};border-radius:4px;font-size:12px;line-height:1.6;">${log.issues || '无'}</div></div>
+      <div class="form-group"><label class="form-label">材料进场</label><div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${log.materials}</div></div>
+    </div>
+    <div class="form-group"><label class="form-label">机械设备情况</label><div style="padding:10px 12px;background:var(--bg-page);border-radius:4px;font-size:12px;line-height:1.6;">${log.equipment}</div></div>
+  `;
+  const footer = `<button class="btn btn-default" onclick="closeModal()">关闭</button><button class="btn btn-primary" onclick="closeModal();alert('编辑功能')">编辑日志</button>`;
+  openModal(log.date + ' 施工日志', body, footer, true);
+}
+
+/* ===== 10. 待办&风险预警中心 ===== */
+function renderTodo() {
+  const d = mockData;
+  const pendingTodos = d.todos.filter(t => t.status !== 'done' && t.status !== 'completed');
+  const highPriority = pendingTodos.filter(t => t.priority === 'high').length;
+  const overdue = pendingTodos.filter(t => t.status === 'overdue').length;
+
+  const html = `
+    <div class="page-header">
+      <div class="page-title">待办&风险预警中心 <span class="subtitle">统一汇总全部待办事项与风险预警，按紧急程度排序</span></div>
+      <div class="page-actions">
+        <button class="btn btn-default btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>导出待办清单</button>
+        <button class="btn btn-primary btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>新增待办</button>
+      </div>
+    </div>
+
+    ${overdue > 0 ? `<div class="scroll-notice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div class="notice-text">有 ${overdue} 项待办已逾期，请立即处理！（建筑电工证件复审已过期）</div></div>` : ''}
+
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat-card primary"><div class="stat-label">待办总数</div><div class="stat-value">${pendingTodos.length}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">高优先级</div><div class="stat-value">${highPriority}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div></div>
+      <div class="stat-card danger"><div class="stat-label">已逾期</div><div class="stat-value">${overdue}<span class="unit">项</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div></div>
+      <div class="stat-card warning"><div class="stat-label">风险预警</div><div class="stat-value">${d.riskAlerts.length}<span class="unit">条</span></div><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">待办事项清单</div><span class="tag tag-danger">${highPriority}项高优先级</span></div>
+        <div class="card-body no-padding">
+          <div style="padding:8px 16px;border-bottom:1px solid var(--border-light);display:flex;gap:8px;">
+            <button class="btn btn-sm btn-primary">全部</button>
+            <button class="btn btn-sm btn-default">隐患整改</button>
+            <button class="btn btn-sm btn-default">质量整改</button>
+            <button class="btn btn-sm btn-default">证件到期</button>
+            <button class="btn btn-sm btn-default">材料补充</button>
+          </div>
+          <ul class="todo-list" style="padding:0 16px;">
+            ${pendingTodos.sort((a,b) => {
+              const order = {high:0, medium:1, low:2};
+              return order[a.priority] - order[b.priority];
+            }).map(t => `
+              <li class="todo-item ${t.status==='done'?'done':''}">
+                <div class="todo-check ${t.status==='done'?'checked':''}" onclick="toggleTodo('${t.id}')">${t.status==='done'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}</div>
+                <div class="todo-content">
+                  <div class="todo-title">${t.title}</div>
+                  <div class="todo-meta">
+                    <span>类型：${t.type}</span>
+                    <span>负责人：${t.responsible}</span>
+                    <span style="color:${t.status==='overdue'?'var(--danger)':'var(--text-muted)'};">截止：${t.deadline}${t.status==='overdue'?' (已逾期)':''}</span>
+                    <span>来源：${t.source}</span>
+                  </div>
+                </div>
+                <div class="todo-priority">${t.priority==='high'?'<span class="tag tag-danger">高</span>':t.priority==='medium'?'<span class="tag tag-warning">中</span>':'<span class="tag tag-info">低</span>'}</div>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">风险预警消息（按紧急程度排序）</div></div>
+        <div class="card-body">
+          <div class="timeline">
+            ${d.riskAlerts.sort((a,b) => {
+              const order = {high:0, medium:1, low:2};
+              return order[a.level] - order[b.level];
+            }).map(r => `
+              <div class="timeline-item ${r.level==='high'?'danger':r.level==='medium'?'warning':'success'}">
+                <div class="timeline-time">${r.time} | ${r.type}</div>
+                <div class="timeline-content">
+                  <div class="title" style="color:${r.level==='high'?'var(--danger)':r.level==='medium'?'var(--warning)':'var(--success)'};">${r.title}</div>
+                  <div class="desc">${r.desc}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#contentArea').innerHTML = html;
+}
+function toggleTodo(id) {
+  const t = mockData.todos.find(i => i.id === id);
+  if (t) {
+    t.status = t.status === 'done' ? 'pending' : 'done';
+    updateBadges();
+    renderTodo();
+  }
+}
+
+/* ===== 工具函数：更新角标 ===== */
+function updateBadges() {
+  const safetyPending = mockData.safety.filter(i => i.status !== 'closed').length;
+  const hazardHigh = mockData.hazard.filter(h => h.riskLevel === 'high' && h.constructionStatus !== '已完成').length;
+  const todoPending = mockData.todos.filter(t => t.status !== 'done' && t.status !== 'completed').length;
+  const sb = $('#safetyBadge'); if (sb) sb.textContent = safetyPending;
+  const hb = $('#hazardBadge'); if (hb) hb.textContent = hazardHigh;
+  const tb = $('#todoBadge'); if (tb) tb.textContent = todoPending;
+  const overdueN = equipmentKpis().overdue.length;
+  const db = $('#deliveryBadge');
+  if (db) {
+    db.textContent = overdueN;
+    db.style.display = overdueN ? '' : 'none';
+  }
+  const stamp = $('#sidebarDataStamp');
+  const snap = getEquipmentMeta().snapshot_date;
+  if (stamp) stamp.textContent = snap ? ('设备数据截至 ' + snap) : '设备数据未加载';
+}
+
+/* ===== 初始化 ===== */
+document.addEventListener('DOMContentLoaded', function() {
+  renderOverview();
+  updateBadges();
+});
+// 兼容脚本在body末尾加载的情况
+if (document.readyState !== 'loading') {
+  renderOverview();
+  updateBadges();
+}
+</script>
+</body>
+</html>

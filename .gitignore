@@ -1,0 +1,20 @@
+# Local / IDE
+.cursor/
+.DS_Store
+*.swp
+*~
+
+# Source Excel and raw dumps (not needed for Pages)
+Equipment Ledger*.xlsx
+进度板块数据集/
+data/equipment_raw.*
+data/equipment.json
+
+# Prompt / reference images
+*.jpg
+*.jpeg
+*.png
+!data/plot/*.png
+
+# Scripts (optional; publish is static-only)
+scripts/
